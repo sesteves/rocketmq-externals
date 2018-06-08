@@ -40,16 +40,22 @@ public class EventProcessor {
 
     private BlockingQueue<Event> queue = new LinkedBlockingQueue<>(100);
 
+    private EventListener eventListener;
+
     private Transaction transaction;
 
     public EventProcessor(Replicator replicator) {
 
         this.replicator = replicator;
+        this.config = replicator.getConfig();
     }
 
 
     public void start() throws Exception {
         initDataSource();
+
+        eventListener = new EventListener(queue);
+
 
         LOGGER.info("Started.");
     }
@@ -83,6 +89,8 @@ public class EventProcessor {
 
         transaction.addRow();
         replicator.commit(transaction, false);
+
+        transaction = new Transaction(config);
     }
 
     private void initDataSource() throws Exception {
@@ -90,7 +98,7 @@ public class EventProcessor {
         Connection connection = ConnectionFactory.createConnection(config);
 
         try {
-            Table table = connection.getTable(TableName.valueOf("myLittleHBaseTable"));
+            Table table = connection.getTable(TableName.valueOf(""));
         } finally {
             connection.close();
         }

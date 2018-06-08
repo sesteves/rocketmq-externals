@@ -17,46 +17,36 @@
 
 package org.apache.rocketmq.hbase;
 
+import org.apache.rocketmq.client.exception.MQClientException;
+import org.apache.rocketmq.client.producer.DefaultMQProducer;
+import org.apache.rocketmq.client.producer.SendResult;
+import org.apache.rocketmq.common.message.Message;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class Replicator {
+public class RocketMQProducer {
+    private static final Logger LOGGER = LoggerFactory.getLogger(RocketMQProducer.class);
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(Replicator.class);
+    private DefaultMQProducer producer;
 
     private Config config;
 
-    private EventProcessor eventProcessor;
-
-    private RocketMQProducer rocketMQProducer;
-
-    public static void main(String[] args) {
-
-        Replicator replicator = new Replicator();
-        replicator.start();
+    public RocketMQProducer(Config config) {
+        this.config = config;
     }
 
-    public void start() {
-        try {
-            config = new Config();
-
-            rocketMQProducer = new RocketMQProducer(config);
-            rocketMQProducer.start();
-
-            eventProcessor = new EventProcessor(this);
-            eventProcessor.start();
-        }
-        catch (Exception e) {
-            LOGGER.error("Start error.", e);
-            System.exit(1);
-        }
+    public void start() throws MQClientException {
+        producer = new DefaultMQProducer("BINLOG_PRODUCER_GROUP");
+        producer.setNamesrvAddr(config.getMqNamesrvAddr());
+        producer.start();
     }
 
-    public void commit(Transaction transaction, boolean isComplete) {
-        // TODO implement
-    }
+    public long push(String json) throws Exception {
+        LOGGER.debug(json);
 
-    public Config getConfig() {
-        return config;
+        Message message = new Message(config.getMqTopic(), json.getBytes("UTF-8"));
+        SendResult sendResult = producer.send(message);
+
+        return sendResult.getQueueOffset();
     }
 }

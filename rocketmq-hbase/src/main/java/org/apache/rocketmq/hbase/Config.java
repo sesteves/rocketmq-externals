@@ -17,8 +17,26 @@
 
 package org.apache.rocketmq.hbase;
 
+import java.io.IOException;
+
 public class Config {
+    private String mqNamesrvAddr;
+
+    private String mqTopic;
+
     private int maxTransactionRows = 100;
+
+    public void load() throws IOException {
+        // TODO implement
+    }
+
+    public String getMqNamesrvAddr() {
+        return mqNamesrvAddr;
+    }
+
+    public String getMqTopic() {
+        return mqTopic;
+    }
 
     public int getMaxTransactionRows() {
         return maxTransactionRows;
