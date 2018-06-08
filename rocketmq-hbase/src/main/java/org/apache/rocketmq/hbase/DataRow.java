@@ -17,32 +17,10 @@
 
 package org.apache.rocketmq.hbase;
 
-import java.util.LinkedList;
-import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-public class Transaction {
-
-    private Config config;
-
-    private List<DataRow> list = new LinkedList<>();
-
-    public Transaction(Config config) {
-        this.config = config;
-    }
-
-    public boolean addRow() {
-        if(list.size() == config.getMaxTransactionRows()) {
-            return false;
-        }
-
-        DataRow dataRow = new DataRow();
-        list.add(dataRow);
-        return true;
-    }
-
-    public String toJson() {
-        // TODO implement
-        return null;
-    }
+public class DataRow {
+    private Logger logger = LoggerFactory.getLogger(DataRow.class);
 
 }

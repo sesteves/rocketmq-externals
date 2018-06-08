@@ -36,6 +36,8 @@ public class EventProcessor {
 
     private Replicator replicator;
 
+    private Config config;
+
     private BlockingQueue<Event> queue = new LinkedBlockingQueue<>(100);
 
     private Transaction transaction;
@@ -76,7 +78,7 @@ public class EventProcessor {
 
     private void addRow(String type, Serializable[] row) {
         if (transaction == null) {
-            transaction = new Transaction();
+            transaction = new Transaction(config);
         }
 
         transaction.addRow();
