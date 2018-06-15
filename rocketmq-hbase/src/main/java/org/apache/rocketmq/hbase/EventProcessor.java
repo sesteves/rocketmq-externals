@@ -14,7 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.rocketmq.hbase;
 
 import java.io.Serializable;
@@ -87,7 +86,7 @@ public class EventProcessor {
             transaction = new Transaction(config);
         }
 
-        transaction.addRow();
+        transaction.addRow(rowKey, columns);
         replicator.commit(transaction, false);
 
         transaction = new Transaction(config);

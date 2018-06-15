@@ -38,6 +38,7 @@ public class Replicator {
     public void start() {
         try {
             config = new Config();
+            config.load();
 
             rocketMQProducer = new RocketMQProducer(config);
             rocketMQProducer.start();

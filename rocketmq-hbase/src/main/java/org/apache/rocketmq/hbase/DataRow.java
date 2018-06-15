@@ -14,13 +14,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.rocketmq.hbase;
 
+import org.apache.hadoop.hbase.Cell;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.List;
 
 public class DataRow {
     private Logger logger = LoggerFactory.getLogger(DataRow.class);
 
+    public DataRow(byte[] rowKey, List<Cell> cells) {
+
+    }
 }
