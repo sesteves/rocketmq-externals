@@ -16,13 +16,16 @@
  */
 package org.apache.rocketmq.hbase;
 
+import com.alibaba.fastjson.JSONObject;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.Cell;
 import org.apache.hadoop.hbase.CellUtil;
 import org.apache.hadoop.hbase.protobuf.generated.CellProtos;
 
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 
 public class Transaction {
 
@@ -77,9 +80,18 @@ public class Transaction {
     }
 
     public String toJson() {
-        // TODO implement
+        List<Map> rows = new LinkedList<>();
+        for (DataRow dataRow : list) {
+            Map rowMap = dataRow.toMap();
+            if (rowMap != null) {
+                rows.add(rowMap);
+            }
+        }
 
-        return null;
+        Map<String, Object> map = new HashMap<>();
+        map.put("rows", rows);
+
+        return JSONObject.toJSONString(map);
     }
 
 }

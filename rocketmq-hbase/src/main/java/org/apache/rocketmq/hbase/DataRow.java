@@ -20,12 +20,28 @@ import org.apache.hadoop.hbase.Cell;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class DataRow {
     private Logger logger = LoggerFactory.getLogger(DataRow.class);
 
     public DataRow(byte[] rowKey, List<Cell> cells) {
 
+    }
+
+    public Map<String, Object> toMap() {
+
+        Map<String, Object> dataMap = new HashMap<>();
+
+
+
+        Map<String, Object> map = new HashMap<>();
+        map.put("table", table.getName());
+        map.put("type", type);
+        map.put("data", dataMap);
+
+        return map;
     }
 }

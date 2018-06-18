@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import com.google.common.collect.Sets;
 import org.apache.hadoop.conf.Configuration;
@@ -118,47 +119,61 @@ public class HBaseEndpoint extends BaseReplicationEndpoint {
     /**
      * {@inheritDoc}
      */
+//    @Override public boolean replicate(ReplicateContext context) {
+//        final List<WAL.Entry> entries = context.getEntries();
+//
+//        final Map<String, List<WAL.Entry>> entriesByTable = entries.stream()
+//                .filter(entry ->  topics.contains(entry.getKey().getTablename().getNameAsString()))
+//                .collect(groupingBy(entry -> entry.getKey().getTablename().getNameAsString()));
+//
+//        Transaction transaction = new Transaction(ctx.getConfiguration());
+//
+//        // replicate data to rocketmq in parallel
+//        entriesByTable.entrySet().stream().forEach(entry -> {
+//            final String tableName = entry.getKey();
+//            final List<WAL.Entry> tableEntries = entry.getValue();
+//
+//            tableEntries.forEach(tblEntry -> {
+//                List<Cell> cells = tblEntry.getEdit().getCells();
+//
+//                // group entries by the row key
+//                Map<byte[], List<Cell>> columnsByRow = cells.stream().collect(groupingBy(CellUtil::cloneRow));
+//
+//                columnsByRow.entrySet().stream().forEach(rowCols -> {
+//                    final byte[] rowKey = rowCols.getKey();
+//                    final List<Cell> columns = rowCols.getValue();
+//
+//                    // final HRow row = TO_HROW.apply(rowKey, columns);
+//
+//                    if (!transaction.addRow(rowKey, columns)) {
+//                        //                    Message message = new Message(tableName, json.getBytes("UTF-8"));
+//                        try {
+//                            producer.send(null);
+//                        } catch (Exception e) {
+//                            // TODO
+//                            e.printStackTrace();
+//                        }
+//                        transaction = new Transaction(ctx.getConfiguration());
+//                    }
+//
+//                });
+//            });
+//
+//        });
+//
+//        return true;
+//    }
+
+    /**
+     * {@inheritDoc}
+     */
     @Override public boolean replicate(ReplicateContext context) {
         final List<WAL.Entry> entries = context.getEntries();
 
-        final Map<String, List<WAL.Entry>> entriesByTable = entries.stream()
-                .filter(entry ->  topics.contains(entry.getKey().getTablename().getNameAsString()))
-                .collect(groupingBy(entry -> entry.getKey().getTablename().getNameAsString()));
 
-        Transaction transaction = new Transaction(ctx.getConfiguration());
 
-        // replicate data to rocketmq in parallel
-        entriesByTable.entrySet().stream().forEach(entry -> {
-            final String tableName = entry.getKey();
-            final List<WAL.Entry> tableEntries = entry.getValue();
-
-            tableEntries.forEach(tblEntry -> {
-                List<Cell> cells = tblEntry.getEdit().getCells();
-
-                // group entries by the row key
-                Map<byte[], List<Cell>> columnsByRow = cells.stream().collect(groupingBy(CellUtil::cloneRow));
-
-                columnsByRow.entrySet().stream().forEach(rowCols -> {
-                    final byte[] rowKey = rowCols.getKey();
-                    final List<Cell> columns = rowCols.getValue();
-
-                    // final HRow row = TO_HROW.apply(rowKey, columns);
-
-                    transaction.addRow(rowKey, columns);
-
-//                    Message message = new Message(tableName, json.getBytes("UTF-8"));
-                    try {
-                        producer.send(null);
-                    } catch (Exception e) {
-                        // TODO
-                        e.printStackTrace();
-                    }
-
-                });
-            });
-
-        });
-
-        return true;
+        return false;
     }
+
+
 }
