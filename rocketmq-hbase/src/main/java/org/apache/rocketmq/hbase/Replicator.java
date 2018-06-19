@@ -16,47 +16,148 @@
  */
 package org.apache.rocketmq.hbase;
 
+import com.google.common.collect.Sets;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.hbase.Cell;
+import org.apache.hadoop.hbase.CellUtil;
+import org.apache.hadoop.hbase.replication.BaseReplicationEndpoint;
+import org.apache.hadoop.hbase.wal.WAL;
+import org.apache.rocketmq.client.exception.MQClientException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class Replicator {
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+
+import static java.util.stream.Collectors.groupingBy;
+
+/**
+ *
+ */
+public class Replicator extends BaseReplicationEndpoint {
+
+    private static final String ROCKETMQ_NAMESRV_ADDR_PARAM = "rocketmq.namesrv.addr";
+
+    private static final String ROCKETMQ_TOPIC_PARAM = "rocketmq.topic";
+
+    private static final String ROCKETMQ_HBASE_TABLES_PARAM = "rocketmq.hbase.tables";
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Replicator.class);
 
-    private Config config;
+    private RocketMQProducer producer;
 
-    private EventProcessor eventProcessor;
+    private Set<String> tables = Sets.newHashSet();
 
-    private RocketMQProducer rocketMQProducer;
-
-    public static void main(String[] args) {
-
-        Replicator replicator = new Replicator();
-        replicator.start();
+    /**
+     *
+     */
+    public Replicator() {
+        super();
     }
 
-    public void start() {
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void init(Context context) throws IOException {
+        super.init(context);
+        LOGGER.info("HBaseEndpoint initialized");
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected void doStart() {
+        LOGGER.info("HBase replication to RocketMQ started");
+
+        final Configuration config = ctx.getConfiguration();
+        final String namesrvAddr = config.get(ROCKETMQ_NAMESRV_ADDR_PARAM);
+        if (namesrvAddr == null) {
+            LOGGER.error("Configuration property not set: " + ROCKETMQ_NAMESRV_ADDR_PARAM);
+        }
+
+        final String topic = config.get(ROCKETMQ_TOPIC_PARAM);
+        if (topic == null) {
+            LOGGER.error("Configuration property not set: " + ROCKETMQ_TOPIC_PARAM);
+        }
+
+        final String tablesParam = config.get(ROCKETMQ_HBASE_TABLES_PARAM);
+        if (tablesParam == null) {
+            LOGGER.error("Configuration property not set: " + ROCKETMQ_HBASE_TABLES_PARAM);
+        }
+        tables = new HashSet<>(Arrays.asList(tablesParam.split(",")));
+
         try {
-            config = new Config();
-            config.load();
-
-            rocketMQProducer = new RocketMQProducer(config);
-            rocketMQProducer.start();
-
-            eventProcessor = new EventProcessor(this);
-            eventProcessor.start();
-        }
-        catch (Exception e) {
-            LOGGER.error("Start error.", e);
-            System.exit(1);
+            producer = new RocketMQProducer(namesrvAddr, topic);
+            producer.start();
+        } catch (MQClientException e) {
+            LOGGER.error("Failed to start RocketMQ producer.", e);
         }
     }
 
-    public void commit(Transaction transaction, boolean isComplete) {
-        // TODO implement
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected void doStop() {
+        LOGGER.info("HBase replication to RocketMQ stopped.");
+        producer.stop();
+        notifyStopped();
     }
 
-    public Config getConfig() {
-        return config;
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public UUID getPeerUUID() {
+        return UUID.randomUUID();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public boolean replicate(ReplicateContext context) {
+        final List<WAL.Entry> entries = context.getEntries();
+
+        final Map<String, List<WAL.Entry>> entriesByTable = entries.stream()
+                .filter(entry -> tables.contains(entry.getKey().getTablename().getNameAsString()))
+                .collect(groupingBy(entry -> entry.getKey().getTablename().getNameAsString()));
+
+        // replicate data to rocketmq
+        Transaction transaction = new Transaction(ctx.getConfiguration());
+        for (Map.Entry<String, List<WAL.Entry>> entry : entriesByTable.entrySet()) {
+            final String tableName = entry.getKey();
+            final List<WAL.Entry> tableEntries = entry.getValue();
+
+            for (WAL.Entry tableEntry : tableEntries) {
+                List<Cell> cells = tableEntry.getEdit().getCells();
+
+                // group entries by the row key
+                Map<byte[], List<Cell>> columnsByRow = cells.stream().collect(groupingBy(CellUtil::cloneRow));
+
+                for (Map.Entry<byte[], List<Cell>> rowCols : columnsByRow.entrySet()) {
+                    final byte[] row = rowCols.getKey();
+                    final List<Cell> columns = rowCols.getValue();
+
+                    if (!transaction.addRow(tableName, row, columns)) {
+                        try {
+                            producer.push(transaction.toJson());
+                        } catch (Exception e) {
+                            LOGGER.error("Error while sending message to RocketMQ.", e);
+                            return false;
+                        }
+                        transaction = new Transaction(ctx.getConfiguration());
+                    }
+                }
+            }
+        }
+        return true;
     }
 }

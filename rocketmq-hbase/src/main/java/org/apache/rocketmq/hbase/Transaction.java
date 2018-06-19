@@ -19,13 +19,13 @@ package org.apache.rocketmq.hbase;
 import com.alibaba.fastjson.JSONObject;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.Cell;
-import org.apache.hadoop.hbase.CellUtil;
 import org.apache.hadoop.hbase.protobuf.generated.CellProtos;
 
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 public class Transaction {
 
@@ -34,64 +34,60 @@ public class Transaction {
 
     private final int maxTransactionRows;
 
-    private List<DataRow> list = new LinkedList<>();
+    private List<DataRow> rows = new LinkedList<>();
 
     public Transaction(Configuration config) {
         maxTransactionRows = config.getInt(ROCKETMQ_TRANSACTION_ROWS_PARAM, ROCKETMQ_TRANSACTION_ROWS_DEFAULT);
     }
 
-    public boolean addRow(byte[] rowKey, List<Cell> cells) {
-        if(list.size() == maxTransactionRows) {
-            return false;
-        }
+    public boolean addRow(String tableName, byte[] rowKey, List<Cell> cells) {
 
         final Cell cell = cells.get(0);
         final CellProtos.CellType type = CellProtos.CellType.valueOf(cell.getTypeByte());
+        final String typeStr;
         switch (type) {
             case DELETE:
+                typeStr = "DELETE";
+                break;
             case DELETE_COLUMN:
+                typeStr = "DELETE_COLUMN";
+                break;
             case DELETE_FAMILY:
-//                rowOp = HRow.RowOp.DELETE;
+                typeStr = "DELETE_FAMILY";
                 break;
             case PUT:
-//                rowOp = HRow.RowOp.PUT;
+                typeStr = "PUT";
                 break;
+            default:
+                typeStr = null;
         }
 
+        DataRow dataRow = new DataRow(typeStr, tableName, rowKey, cells);
+        rows.add(dataRow);
 
-        DataRow dataRow = new DataRow(rowKey, cells);
-        list.add(dataRow);
-        return true;
+        return rows.size() < maxTransactionRows;
     }
 
-    private void toRowColumns(final List<Cell> cells) {
-
-//        cells.stream().map(cell -> {
-//            byte[] family = CellUtil.cloneFamily(cell);
-//            byte[] qualifier = CellUtil.cloneQualifier(cell);
-//            byte[] value = CellUtil.cloneValue(cell);
-//            long timestamp = cell.getTimestamp();
+//    private void toRowColumns(final List<Cell> cells) {
 //
-//            final HRow.HColumn column = new HRow.HColumn(family, qualifier, value, timestamp);
-//            return column;
-//        }).collect(toList());
-//
-//        return columns;
-    }
+////        cells.stream().map(cell -> {
+////            byte[] family = CellUtil.cloneFamily(cell);
+////            byte[] qualifier = CellUtil.cloneQualifier(cell);
+////            byte[] value = CellUtil.cloneValue(cell);
+////            long timestamp = cell.getTimestamp();
+////
+////            final HRow.HColumn column = new HRow.HColumn(family, qualifier, value, timestamp);
+////            return column;
+////        }).collect(toList());
+////
+////        return columns;
+//    }
 
     public String toJson() {
-        List<Map> rows = new LinkedList<>();
-        for (DataRow dataRow : list) {
-            Map rowMap = dataRow.toMap();
-            if (rowMap != null) {
-                rows.add(rowMap);
-            }
-        }
-
         Map<String, Object> map = new HashMap<>();
-        map.put("rows", rows);
+        List<Map<String, Object>> rowsMap = rows.stream().map(row -> row.toMap()).collect(Collectors.toList());
+        map.put("rows", rowsMap);
 
         return JSONObject.toJSONString(map);
     }
-
 }

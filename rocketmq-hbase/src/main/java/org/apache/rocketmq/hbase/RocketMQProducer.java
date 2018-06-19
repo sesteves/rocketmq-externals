@@ -25,28 +25,37 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class RocketMQProducer {
+    private static final String PRODUCER_GROUP_NAME = "HBASE_PRODUCER_GROUP";
+
     private static final Logger LOGGER = LoggerFactory.getLogger(RocketMQProducer.class);
 
     private DefaultMQProducer producer;
 
-    private Config config;
+    private String namesrvAddr;
 
-    public RocketMQProducer(Config config) {
-        this.config = config;
+    private String topic;
+
+    public RocketMQProducer(String namesrvAddr, String topic) {
+        this.namesrvAddr = namesrvAddr;
+        this.topic = topic;
     }
 
     public void start() throws MQClientException {
-        producer = new DefaultMQProducer("BINLOG_PRODUCER_GROUP");
-        producer.setNamesrvAddr(config.getMqNamesrvAddr());
+        producer = new DefaultMQProducer(PRODUCER_GROUP_NAME);
+        producer.setNamesrvAddr(namesrvAddr);
         producer.start();
     }
 
     public long push(String json) throws Exception {
         LOGGER.debug(json);
 
-        Message message = new Message(config.getMqTopic(), json.getBytes("UTF-8"));
+        Message message = new Message(topic, json.getBytes("UTF-8"));
         SendResult sendResult = producer.send(message);
 
         return sendResult.getQueueOffset();
+    }
+
+    public void stop() {
+        producer.shutdown();
     }
 }

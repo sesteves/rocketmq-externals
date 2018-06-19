@@ -17,6 +17,8 @@
 package org.apache.rocketmq.hbase;
 
 import org.apache.hadoop.hbase.Cell;
+import org.apache.hadoop.hbase.CellUtil;
+import org.apache.hadoop.hbase.util.Bytes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -24,22 +26,53 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static java.util.stream.Collectors.groupingBy;
+
 public class DataRow {
     private Logger logger = LoggerFactory.getLogger(DataRow.class);
 
-    public DataRow(byte[] rowKey, List<Cell> cells) {
+    private String type;
 
+    private String table;
+
+    private byte[] row;
+
+    private List<Cell> cells;
+
+    public DataRow(String type, String table, byte[] row, List<Cell> cells) {
+        this.type = type;
+        this.table = table;
+        this.row = row;
+        this.cells = cells;
     }
 
     public Map<String, Object> toMap() {
+        final Map<String, Object> dataMap = new HashMap<>();
 
-        Map<String, Object> dataMap = new HashMap<>();
+        final Map<byte[], List<Cell>> columnsByFamily = cells.stream().collect(groupingBy(CellUtil::cloneFamily));
 
+        for(Map.Entry<byte[], List<Cell>> entry : columnsByFamily.entrySet()) {
+            final String columnFamily = Bytes.toString(entry.getKey());
+            final List<Cell> cells = entry.getValue();
 
+            final Map<String, Object> qualifiers = new HashMap<>();
+            for (Cell cell : cells) {
+                if (cell.getQualifierLength() > 0) {
+                    final String columnQualifier = Bytes.toString(CellUtil.cloneQualifier(cell));
+                    qualifiers.put(columnQualifier, CellUtil.cloneValue(cell));
+                } else {
+                    dataMap.put(columnFamily, CellUtil.cloneValue(cell));
+                }
+            }
+            if (qualifiers.size() > 0) {
+                dataMap.put(columnFamily, qualifiers);
+            }
+        }
 
         Map<String, Object> map = new HashMap<>();
-        map.put("table", table.getName());
+        map.put("table", table);
         map.put("type", type);
+        map.put("row", Bytes.toString(row));
         map.put("data", dataMap);
 
         return map;

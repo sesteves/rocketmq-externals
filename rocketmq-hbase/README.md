@@ -17,7 +17,7 @@ This project replicates HBase tables to RocketMQ topics.
 
 
 ## Deployment
-1. Add hbase-cdc-kafka.jar and hbase-site.xml with the required properties to all the HBase Region servers classpath and restart them.
+1. Add rocketmq-hbase-X.Y-SNAPSHOT.jar and hbase-site.xml with the required properties to all the HBase Region servers classpath and restart them.
 
 2. At HBase shell, run the following commands.
 
