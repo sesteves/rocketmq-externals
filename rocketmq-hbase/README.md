@@ -23,6 +23,6 @@ This project replicates HBase tables to RocketMQ topics.
 
 ```bash
 hbase> create 'test', {NAME => 'd', REPLICATION_SCOPE => '1'}
-hbase> add_peer 'rocketmq-repl', ENDPOINT_CLASSNAME 'org.apache.rocketmq.hbase.HbaseEndpoint'
+hbase> add_peer 'rocketmq-repl', ENDPOINT_CLASSNAME 'org.apache.rocketmq.hbase.Replicator'
 hbase> put 'test', 'r1', 'd', 'value'
 ```
