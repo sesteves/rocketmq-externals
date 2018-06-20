@@ -132,32 +132,36 @@ public class Replicator extends BaseReplicationEndpoint {
 
         // replicate data to rocketmq
         Transaction transaction = new Transaction(ctx.getConfiguration());
-        for (Map.Entry<String, List<WAL.Entry>> entry : entriesByTable.entrySet()) {
-            final String tableName = entry.getKey();
-            final List<WAL.Entry> tableEntries = entry.getValue();
+        try {
+            for (Map.Entry<String, List<WAL.Entry>> entry : entriesByTable.entrySet()) {
+                final String tableName = entry.getKey();
+                final List<WAL.Entry> tableEntries = entry.getValue();
 
-            for (WAL.Entry tableEntry : tableEntries) {
-                List<Cell> cells = tableEntry.getEdit().getCells();
+                for (WAL.Entry tableEntry : tableEntries) {
+                    List<Cell> cells = tableEntry.getEdit().getCells();
 
-                // group entries by the row key
-                Map<byte[], List<Cell>> columnsByRow = cells.stream().collect(groupingBy(CellUtil::cloneRow));
+                    // group entries by the row key
+                    Map<byte[], List<Cell>> columnsByRow = cells.stream().collect(groupingBy(CellUtil::cloneRow));
 
-                for (Map.Entry<byte[], List<Cell>> rowCols : columnsByRow.entrySet()) {
-                    final byte[] row = rowCols.getKey();
-                    final List<Cell> columns = rowCols.getValue();
+                    for (Map.Entry<byte[], List<Cell>> rowCols : columnsByRow.entrySet()) {
+                        final byte[] row = rowCols.getKey();
+                        final List<Cell> columns = rowCols.getValue();
 
-                    if (!transaction.addRow(tableName, row, columns)) {
-                        try {
+                        if (!transaction.addRow(tableName, row, columns)) {
                             producer.push(transaction.toJson());
-                        } catch (Exception e) {
-                            LOGGER.error("Error while sending message to RocketMQ.", e);
-                            return false;
+                            transaction = new Transaction(ctx.getConfiguration());
                         }
-                        transaction = new Transaction(ctx.getConfiguration());
                     }
                 }
             }
+
+            // replicate remaining transaction
+            producer.push(transaction.toJson());
+        } catch (Exception e) {
+            LOGGER.error("Error while sending message to RocketMQ.", e);
+            return false;
         }
+
         return true;
     }
 }
