@@ -74,22 +74,23 @@ public class Replicator extends BaseReplicationEndpoint {
      */
     @Override
     protected void doStart() {
-        LOGGER.info("HBase replication to RocketMQ started");
-
         final Configuration config = ctx.getConfiguration();
         final String namesrvAddr = config.get(ROCKETMQ_NAMESRV_ADDR_PARAM);
         if (namesrvAddr == null) {
             LOGGER.error("Configuration property not set: " + ROCKETMQ_NAMESRV_ADDR_PARAM);
+            return;
         }
 
         final String topic = config.get(ROCKETMQ_TOPIC_PARAM);
         if (topic == null) {
             LOGGER.error("Configuration property not set: " + ROCKETMQ_TOPIC_PARAM);
+            return;
         }
 
         final String tablesParam = config.get(ROCKETMQ_HBASE_TABLES_PARAM);
         if (tablesParam == null) {
             LOGGER.error("Configuration property not set: " + ROCKETMQ_HBASE_TABLES_PARAM);
+            return;
         }
         tables = new HashSet<>(Arrays.asList(tablesParam.split(",")));
 
@@ -97,6 +98,7 @@ public class Replicator extends BaseReplicationEndpoint {
             producer = new RocketMQProducer(namesrvAddr, topic);
             producer.start();
 
+            LOGGER.info("HBase replication to RocketMQ started");
             notifyStarted();
         } catch (MQClientException e) {
             LOGGER.error("Failed to start RocketMQ producer.", e);
@@ -108,8 +110,9 @@ public class Replicator extends BaseReplicationEndpoint {
      */
     @Override
     protected void doStop() {
-        LOGGER.info("HBase replication to RocketMQ stopped.");
         producer.stop();
+
+        LOGGER.info("HBase replication to RocketMQ stopped.");
         notifyStopped();
     }
 
