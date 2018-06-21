@@ -9,11 +9,18 @@ This project replicates HBase tables to RocketMQ topics.
 - JDK 1.8+
 - RocketMQ 4.0.0+ 
 
+## Requirements
+
+- HBase cluster is configured with the setting hbase.replication to true in hbase-site.xml
+
 ## Properties
+Have the below properties set in hbase-site.xml and add it to the HBase region server classpath.
+
 |key               |nullable|default    |description|
 |------------------|--------|-----------|-----------|
-|mqNamesrvAddr     |false   |           |RocketMQ name server address (e.g.,127.0.0.1:9876)|
-|mqTopics          |false   |           |RocketMQ topic names separated by comma. (e.g., topic1,topic2,topic3)|
+|rocketmq.namesrv.addr     |false   |           |RocketMQ name server address (e.g.,127.0.0.1:9876)|
+|rocketmq.topic    |  false |  | RocketMQ topic to replicate HBase data to. | 
+|rocketmq.hbase.tables  |false   |           | List of HBase tables, separated by comma, to replicate to RocketMQ (e.g., table1,table2,table3)|
 
 
 ## Deployment
