@@ -96,6 +96,8 @@ public class Replicator extends BaseReplicationEndpoint {
         try {
             producer = new RocketMQProducer(namesrvAddr, topic);
             producer.start();
+
+            notifyStarted();
         } catch (MQClientException e) {
             LOGGER.error("Failed to start RocketMQ producer.", e);
         }
