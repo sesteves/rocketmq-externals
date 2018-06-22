@@ -5,13 +5,13 @@
 This project replicates HBase tables to RocketMQ topics.
 
 ## Pre-requisites
-- HBase 1.4.4
+- HBase 1.2+
 - JDK 1.8+
 - RocketMQ 4.0.0+ 
 
 ## Requirements
 
-- HBase cluster is configured with the setting hbase.replication to true in hbase-site.xml
+- HBase cluster is configured with the setting `hbase.replication` to `true` in hbase-site.xml
 
 ## Properties
 Have the below properties set in hbase-site.xml and add it to the HBase region server classpath.
@@ -24,7 +24,7 @@ Have the below properties set in hbase-site.xml and add it to the HBase region s
 
 
 ## Deployment
-1. Add rocketmq-hbase-X.Y-SNAPSHOT.jar and hbase-site.xml with the required properties to all the HBase Region servers classpath and restart them.
+1. Add rocketmq-hbase-X.Y-SNAPSHOT.jar and hbase-site.xml with the required properties to all the HBase region servers classpath and restart them.
 
 2. At HBase shell, run the following commands.
 

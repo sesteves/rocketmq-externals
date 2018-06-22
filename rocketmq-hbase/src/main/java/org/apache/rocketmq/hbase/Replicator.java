@@ -37,7 +37,8 @@ import java.util.UUID;
 import static java.util.stream.Collectors.groupingBy;
 
 /**
- *
+ * This class functions as an HBase replication endpoint, that runs at each region server,
+ * and replicates data from specified HBase tables to a RocketMQ topic.
  */
 public class Replicator extends BaseReplicationEndpoint {
 
@@ -54,7 +55,7 @@ public class Replicator extends BaseReplicationEndpoint {
     private Set<String> tables = Sets.newHashSet();
 
     /**
-     *
+     * Constructor.
      */
     public Replicator() {
         super();
