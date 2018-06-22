@@ -42,6 +42,7 @@ public class RocketMQProducer {
 
     public void start() throws MQClientException {
         producer = new DefaultMQProducer(PRODUCER_GROUP_NAME);
+        producer.setInstanceName("producer-" + System.currentTimeMillis());
         producer.setNamesrvAddr(namesrvAddr);
         producer.start();
     }
