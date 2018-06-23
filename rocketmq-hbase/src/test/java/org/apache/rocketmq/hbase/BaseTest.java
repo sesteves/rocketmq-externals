@@ -73,10 +73,8 @@ public class BaseTest {
         utility.startMiniCluster();
         numRegionServers = utility.getHBaseCluster().getRegionServerThreads().size();
 
-        // setup RocketMQ
-
-
-
+        // setup and start RocketMQ
+        startMQ();
     }
 
     /**
@@ -85,7 +83,7 @@ public class BaseTest {
      * @param hbaseConf
      */
     private void addRocketMQProperties(Configuration hbaseConf) {
-        hbaseConf.set("rocketmq.namesrv.addr", "localhost:9876");
+        hbaseConf.set("rocketmq.namesrv.addr", nameServer);
         hbaseConf.set("rocketmq.topic", "hbase-rocketmq-topic-test");
         hbaseConf.set("rocketmq.hbase.tables", "hbase-rocketmq-test");
     }
@@ -110,7 +108,6 @@ public class BaseTest {
     }
 
 
-    @BeforeClass
     public static void startMQ() throws Exception {
         startNamesrv();
         startBroker();
@@ -128,13 +125,12 @@ public class BaseTest {
         boolean initResult = namesrvController.initialize();
         if (!initResult) {
             namesrvController.shutdown();
-            throw new Exception();
+            throw new Exception("Name server controller failed to initialize.");
         }
         namesrvController.start();
     }
 
     private static void startBroker() throws Exception {
-
         System.setProperty(RemotingCommand.REMOTING_VERSION_KEY, Integer.toString(MQVersion.CURRENT_VERSION));
 
         BrokerConfig brokerConfig = new BrokerConfig();
@@ -158,9 +154,14 @@ public class BaseTest {
 
     @After
     public void tearDown() throws Exception {
-        if(kafkaServer != null) {
-            kafkaServer.shutdown();
+        if (brokerController != null) {
+            brokerController.shutdown();
         }
+
+        if (namesrvController != null) {
+            namesrvController.shutdown();
+        }
+
         if(utility != null) {
             utility.shutdownMiniCluster();
         }
