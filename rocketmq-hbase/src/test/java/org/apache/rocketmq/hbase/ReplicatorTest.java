@@ -98,8 +98,8 @@ public class ReplicatorTest extends BaseTest {
                     for (MessageExt message : pullResult.getMsgFoundList()) {
                         byte[] body = message.getBody();
                         receiveMsg = new String(body, "UTF-8");
-                        String[] receiveMsgKv = receiveMsg.split(",");
-                        msgs.remove(receiveMsgKv[1]);
+                        // String[] receiveMsgKv = receiveMsg.split(",");
+                        // msgs.remove(receiveMsgKv[1]);
                         LOGGER.info("receive message : {}", receiveMsg);
                         receiveNum++;
                     }
