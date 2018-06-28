@@ -29,15 +29,13 @@ import java.util.stream.Collectors;
 
 public class Transaction {
 
-    private static final String ROCKETMQ_TRANSACTION_ROWS_PARAM = "rocketmq.transaction.max.rows";
-    private static final int ROCKETMQ_TRANSACTION_ROWS_DEFAULT = 100;
 
     private final int maxTransactionRows;
 
     private List<DataRow> rows = new LinkedList<>();
 
-    public Transaction(Configuration config) {
-        maxTransactionRows = config.getInt(ROCKETMQ_TRANSACTION_ROWS_PARAM, ROCKETMQ_TRANSACTION_ROWS_DEFAULT);
+    public Transaction(int maxTransactionRows) {
+        this.maxTransactionRows = maxTransactionRows;
     }
 
     public boolean addRow(String tableName, byte[] rowKey, List<Cell> cells) {

@@ -40,13 +40,14 @@ import org.apache.rocketmq.remoting.protocol.RemotingCommand;
 import org.apache.rocketmq.store.config.MessageStoreConfig;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.BeforeClass;
 
 public class BaseTest {
 
     protected static final String ROCKETMQ_TOPIC = "hbase-rocketmq-topic-test";
 
-    protected static String NAMESERVER = "localhost:9876";
+    protected static final String NAMESERVER = "localhost:9876";
+
+    protected static final String TABLE_NAME = "hbase-rocketmq-test";
 
     private static NamesrvController namesrvController;
 
@@ -87,7 +88,7 @@ public class BaseTest {
     private void addRocketMQProperties(Configuration hbaseConf) {
         hbaseConf.set("rocketmq.namesrv.addr", NAMESERVER);
         hbaseConf.set("rocketmq.topic", ROCKETMQ_TOPIC);
-        hbaseConf.set("rocketmq.hbase.tables", "hbase-rocketmq-test");
+        hbaseConf.set("rocketmq.hbase.tables", TABLE_NAME);
     }
 
     /**

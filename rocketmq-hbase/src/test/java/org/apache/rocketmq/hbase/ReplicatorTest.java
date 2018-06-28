@@ -16,6 +16,7 @@
  */
 package org.apache.rocketmq.hbase;
 
+import org.apache.hadoop.hbase.Cell;
 import org.apache.hadoop.hbase.HColumnDescriptor;
 import org.apache.hadoop.hbase.HConstants;
 import org.apache.hadoop.hbase.HTableDescriptor;
@@ -54,13 +55,11 @@ public class ReplicatorTest extends BaseTest {
 
     private static final String PEER_NAME = "rocketmq.hbase";
 
-    private final TableName TABLE_NAME = TableName.valueOf("testings");
+    private final TableName TABLE_NAME = TableName.valueOf(super.TABLE_NAME);
     private final String ROWKEY = "rk-%s";
     private final String COLUMN_FAMILY = "d";
     private final String QUALIFIER = "q";
     private final String VALUE = "v";
-
-    private String tag = "ROCKETMQ_HBASE_TEST_" + new Random().nextInt(99);
 
     private int batchSize = 100;
 
@@ -78,8 +77,14 @@ public class ReplicatorTest extends BaseTest {
             tableCfs.put(TABLE_NAME, cfs);
             addPeer(utility.getConfiguration(), PEER_NAME, tableCfs);
 
+            // wait for new peer to be added
+            Thread.sleep(500);
+
             final int numberOfRecords = 10;
-            insertData(numberOfRecords);
+            final Transaction inTransaction = insertData(numberOfRecords);
+
+            // wait for data to be replicated
+            Thread.sleep(500);
 
             DefaultMQPullConsumer consumer = new DefaultMQPullConsumer(RocketMQProducer.PRODUCER_GROUP_NAME);
             consumer.setNamesrvAddr(NAMESERVER);
@@ -92,7 +97,7 @@ public class ReplicatorTest extends BaseTest {
             Set<MessageQueue> queues = consumer.fetchSubscribeMessageQueues(ROCKETMQ_TOPIC);
             for (MessageQueue queue : queues) {
                 long offset = getMessageQueueOffset(consumer, queue);
-                PullResult pullResult = consumer.pull(queue, tag, offset, batchSize);
+                PullResult pullResult = consumer.pull(queue, null, offset, batchSize);
 
                 if (pullResult.getPullStatus() == PullStatus.FOUND) {
                     for (MessageExt message : pullResult.getMsgFoundList()) {
@@ -113,6 +118,9 @@ public class ReplicatorTest extends BaseTest {
             Thread.sleep(1000);
 
             consumer.shutdown();
+
+
+            // TODO complete assert equals
 
         } finally {
             removePeer();
@@ -149,14 +157,21 @@ public class ReplicatorTest extends BaseTest {
      *
      * @throws IOException
      */
-    private void insertData(int numberOfRecords) throws IOException {
+    private Transaction insertData(int numberOfRecords) throws IOException {
+        final Transaction transaction = new Transaction(numberOfRecords);
         try(Table hTable = ConnectionFactory.createConnection(utility.getConfiguration()).getTable(TABLE_NAME)) {
             for(int i = 0; i < numberOfRecords; i++) {
-                Put put = new Put(toBytes(String.format(ROWKEY, i)));
-                put.addColumn(toBytes(COLUMN_FAMILY), toBytes(QUALIFIER), toBytes(VALUE));
+                final byte[] rowKey = toBytes(String.format(ROWKEY, i));
+                final byte[] family = toBytes(COLUMN_FAMILY);
+                final Put put = new Put(rowKey);
+                put.addColumn(family, toBytes(QUALIFIER), toBytes(VALUE));
                 hTable.put(put);
+
+                List<Cell> cells = put.getFamilyCellMap().get(family);
+                transaction.addRow(super.TABLE_NAME, rowKey, cells);
             }
         }
+        return transaction;
     }
 
     /**

@@ -48,11 +48,17 @@ public class Replicator extends BaseReplicationEndpoint {
 
     private static final String ROCKETMQ_HBASE_TABLES_PARAM = "rocketmq.hbase.tables";
 
+    private static final String ROCKETMQ_TRANSACTION_ROWS_PARAM = "rocketmq.transaction.max.rows";
+
+    private static final int ROCKETMQ_TRANSACTION_ROWS_DEFAULT = 100;
+
     private static final Logger LOGGER = LoggerFactory.getLogger(Replicator.class);
 
     private RocketMQProducer producer;
 
     private Set<String> tables = Sets.newHashSet();
+
+    private int maxTransactionRows;
 
     /**
      * Constructor.
@@ -94,6 +100,8 @@ public class Replicator extends BaseReplicationEndpoint {
             return;
         }
         tables = new HashSet<>(Arrays.asList(tablesParam.split(",")));
+
+        maxTransactionRows = config.getInt(ROCKETMQ_TRANSACTION_ROWS_PARAM, ROCKETMQ_TRANSACTION_ROWS_DEFAULT);
 
         try {
             producer = new RocketMQProducer(namesrvAddr, topic);
@@ -137,7 +145,7 @@ public class Replicator extends BaseReplicationEndpoint {
                 .collect(groupingBy(entry -> entry.getKey().getTablename().getNameAsString()));
 
         // replicate data to rocketmq
-        Transaction transaction = new Transaction(ctx.getConfiguration());
+        Transaction transaction = new Transaction(maxTransactionRows);
         try {
             for (Map.Entry<String, List<WAL.Entry>> entry : entriesByTable.entrySet()) {
                 final String tableName = entry.getKey();
@@ -155,7 +163,7 @@ public class Replicator extends BaseReplicationEndpoint {
 
                         if (!transaction.addRow(tableName, row, columns)) {
                             producer.push(transaction.toJson());
-                            transaction = new Transaction(ctx.getConfiguration());
+                            transaction = new Transaction(maxTransactionRows);
                         }
                     }
                 }
