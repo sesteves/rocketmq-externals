@@ -26,6 +26,14 @@ import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.client.Table;
 import org.apache.hadoop.hbase.client.replication.ReplicationAdmin;
 import org.apache.hadoop.hbase.replication.ReplicationException;
+import org.apache.hadoop.hdfs.server.datanode.Replica;
+import org.apache.rocketmq.client.consumer.DefaultMQPullConsumer;
+import org.apache.rocketmq.client.consumer.PullResult;
+import org.apache.rocketmq.client.consumer.PullStatus;
+import org.apache.rocketmq.client.exception.MQClientException;
+import org.apache.rocketmq.common.message.MessageExt;
+import org.apache.rocketmq.common.message.MessageQueue;
+import org.apache.rocketmq.common.protocol.heartbeat.MessageModel;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,6 +43,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
+import java.util.Set;
 
 import static org.apache.hadoop.hbase.util.Bytes.toBytes;
 
@@ -49,6 +59,10 @@ public class ReplicatorTest extends BaseTest {
     private final String COLUMN_FAMILY = "d";
     private final String QUALIFIER = "q";
     private final String VALUE = "v";
+
+    private String tag = "ROCKETMQ_HBASE_TEST_" + new Random().nextInt(99);
+
+    private int batchSize = 100;
 
     /**
      * This method tests the replicator by writing data from hbase to rocketmq and reading it back.
@@ -67,14 +81,51 @@ public class ReplicatorTest extends BaseTest {
             final int numberOfRecords = 10;
             insertData(numberOfRecords);
 
+            DefaultMQPullConsumer consumer = new DefaultMQPullConsumer(RocketMQProducer.PRODUCER_GROUP_NAME);
+            consumer.setNamesrvAddr(NAMESERVER);
+            consumer.setMessageModel(MessageModel.valueOf("BROADCASTING"));
+            consumer.registerMessageQueueListener(ROCKETMQ_TOPIC, null);
+            consumer.start();
 
+            int receiveNum = 0;
+            String receiveMsg = null;
+            Set<MessageQueue> queues = consumer.fetchSubscribeMessageQueues(ROCKETMQ_TOPIC);
+            for (MessageQueue queue : queues) {
+                long offset = getMessageQueueOffset(consumer, queue);
+                PullResult pullResult = consumer.pull(queue, tag, offset, batchSize);
 
+                if (pullResult.getPullStatus() == PullStatus.FOUND) {
+                    for (MessageExt message : pullResult.getMsgFoundList()) {
+                        byte[] body = message.getBody();
+                        receiveMsg = new String(body, "UTF-8");
+                        String[] receiveMsgKv = receiveMsg.split(",");
+                        msgs.remove(receiveMsgKv[1]);
+                        LOGGER.info("receive message : {}", receiveMsg);
+                        receiveNum++;
+                    }
+                    long nextBeginOffset = pullResult.getNextBeginOffset();
+                    consumer.updateConsumeOffset(queue, offset);
+                }
+            }
+            LOGGER.info("receive message num={}", receiveNum);
 
+            // wait for processQueueTable init
+            Thread.sleep(1000);
+
+            consumer.shutdown();
 
         } finally {
             removePeer();
         }
 
+    }
+
+    private long getMessageQueueOffset(DefaultMQPullConsumer consumer, MessageQueue queue) throws MQClientException {
+        long offset = consumer.fetchConsumeOffset(queue, false);
+        if (offset < 0) {
+            offset = 0;
+        }
+        return offset;
     }
 
     /**

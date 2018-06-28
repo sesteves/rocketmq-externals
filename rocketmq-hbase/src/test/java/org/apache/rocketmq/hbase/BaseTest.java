@@ -44,11 +44,13 @@ import org.junit.BeforeClass;
 
 public class BaseTest {
 
+    protected static final String ROCKETMQ_TOPIC = "hbase-rocketmq-topic-test";
+
+    protected static String NAMESERVER = "localhost:9876";
+
     private static NamesrvController namesrvController;
 
     private static BrokerController brokerController;
-
-    private static String nameServer = "localhost:9876";
 
     protected HBaseTestingUtility utility;
 
@@ -83,8 +85,8 @@ public class BaseTest {
      * @param hbaseConf
      */
     private void addRocketMQProperties(Configuration hbaseConf) {
-        hbaseConf.set("rocketmq.namesrv.addr", nameServer);
-        hbaseConf.set("rocketmq.topic", "hbase-rocketmq-topic-test");
+        hbaseConf.set("rocketmq.namesrv.addr", NAMESERVER);
+        hbaseConf.set("rocketmq.topic", ROCKETMQ_TOPIC);
         hbaseConf.set("rocketmq.hbase.tables", "hbase-rocketmq-test");
     }
 
@@ -134,7 +136,7 @@ public class BaseTest {
         System.setProperty(RemotingCommand.REMOTING_VERSION_KEY, Integer.toString(MQVersion.CURRENT_VERSION));
 
         BrokerConfig brokerConfig = new BrokerConfig();
-        brokerConfig.setNamesrvAddr(nameServer);
+        brokerConfig.setNamesrvAddr(NAMESERVER);
         brokerConfig.setBrokerId(MixAll.MASTER_ID);
         NettyServerConfig nettyServerConfig = new NettyServerConfig();
         nettyServerConfig.setListenPort(10911);

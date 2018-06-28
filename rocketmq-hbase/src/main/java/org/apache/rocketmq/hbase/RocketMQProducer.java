@@ -25,7 +25,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class RocketMQProducer {
-    private static final String PRODUCER_GROUP_NAME = "HBASE_PRODUCER_GROUP";
+    public static final String PRODUCER_GROUP_NAME = "HBASE_PRODUCER_GROUP";
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RocketMQProducer.class);
 
