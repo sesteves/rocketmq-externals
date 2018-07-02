@@ -16,7 +16,10 @@
  */
 package org.apache.rocketmq.hbase;
 
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.Cell;
+import org.apache.hadoop.hbase.HBaseConfiguration;
+import org.apache.hadoop.hbase.HBaseTestingUtility;
 import org.apache.hadoop.hbase.HColumnDescriptor;
 import org.apache.hadoop.hbase.HConstants;
 import org.apache.hadoop.hbase.HTableDescriptor;
@@ -27,15 +30,27 @@ import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.client.Table;
 import org.apache.hadoop.hbase.client.replication.ReplicationAdmin;
 import org.apache.hadoop.hbase.replication.ReplicationException;
-import org.apache.hadoop.hdfs.server.datanode.Replica;
+import org.apache.hadoop.hbase.replication.ReplicationPeerConfig;
+import org.apache.hadoop.hbase.zookeeper.ZKConfig;
+import org.apache.rocketmq.broker.BrokerController;
 import org.apache.rocketmq.client.consumer.DefaultMQPullConsumer;
 import org.apache.rocketmq.client.consumer.PullResult;
 import org.apache.rocketmq.client.consumer.PullStatus;
 import org.apache.rocketmq.client.exception.MQClientException;
+import org.apache.rocketmq.common.BrokerConfig;
+import org.apache.rocketmq.common.MQVersion;
+import org.apache.rocketmq.common.MixAll;
 import org.apache.rocketmq.common.message.MessageExt;
 import org.apache.rocketmq.common.message.MessageQueue;
+import org.apache.rocketmq.common.namesrv.NamesrvConfig;
 import org.apache.rocketmq.common.protocol.heartbeat.MessageModel;
-import org.junit.Assert;
+import org.apache.rocketmq.namesrv.NamesrvController;
+import org.apache.rocketmq.remoting.netty.NettyClientConfig;
+import org.apache.rocketmq.remoting.netty.NettyServerConfig;
+import org.apache.rocketmq.remoting.protocol.RemotingCommand;
+import org.apache.rocketmq.store.config.MessageStoreConfig;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,25 +60,134 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 import java.util.Set;
 
 import static org.apache.hadoop.hbase.util.Bytes.toBytes;
 import static org.junit.Assert.assertEquals;
 
-public class ReplicatorTest extends BaseTest {
+public class ReplicatorTest {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ReplicatorTest.class);
 
+    private static final String ROCKETMQ_TOPIC = "hbase-rocketmq-topic-test";
+
+    private static final String NAMESERVER = "localhost:9876";
+
+    private static final String TABLE_NAME_STR = "hbase-rocketmq-test";
+
     private static final String PEER_NAME = "rocketmq.hbase";
 
-    private final TableName TABLE_NAME = TableName.valueOf(super.TABLE_NAME);
+    private final TableName TABLE_NAME = TableName.valueOf(TABLE_NAME_STR);
     private final String ROWKEY = "rk-%s";
     private final String COLUMN_FAMILY = "d";
     private final String QUALIFIER = "q";
     private final String VALUE = "v";
 
+    private static NamesrvController namesrvController;
+
+    private static BrokerController brokerController;
+
+    protected HBaseTestingUtility utility;
+
+    protected int numRegionServers;
+
     private int batchSize = 100;
+
+    @Before
+    public void setUp() throws Exception {
+        final Configuration hbaseConf = HBaseConfiguration.create();
+        hbaseConf.setInt("replication.stats.thread.period.seconds", 5);
+        hbaseConf.setLong("replication.sleep.before.failover", 2000);
+        hbaseConf.setInt("replication.source.maxretriesmultiplier", 10);
+        hbaseConf.setBoolean(HConstants.REPLICATION_ENABLE_KEY, true);
+
+        // Add RocketMQ properties - we prefix each property with 'rocketmq'
+        addRocketMQProperties(hbaseConf);
+
+        utility = new HBaseTestingUtility(hbaseConf);
+        utility.startMiniCluster();
+        numRegionServers = utility.getHBaseCluster().getRegionServerThreads().size();
+
+        utility = new HBaseTestingUtility(hbaseConf);
+        utility.startMiniCluster();
+        numRegionServers = utility.getHBaseCluster().getRegionServerThreads().size();
+
+        // setup and start RocketMQ
+        startMQ();
+    }
+
+    /**
+     * Add RocketMQ properties to {@link Configuration}
+     *
+     * @param hbaseConf
+     */
+    private void addRocketMQProperties(Configuration hbaseConf) {
+        hbaseConf.set("rocketmq.namesrv.addr", NAMESERVER);
+        hbaseConf.set("rocketmq.topic", ROCKETMQ_TOPIC);
+        hbaseConf.set("rocketmq.hbase.tables", TABLE_NAME_STR);
+    }
+
+    /**
+     *
+     * @param configuration
+     * @param peerName
+     * @param tableCFs
+     * @throws ReplicationException
+     * @throws IOException
+     */
+    protected void addPeer(final Configuration configuration,String peerName, Map<TableName, List<String>> tableCFs)
+            throws ReplicationException, IOException {
+        try (ReplicationAdmin replicationAdmin = new ReplicationAdmin(configuration)) {
+            ReplicationPeerConfig peerConfig = new ReplicationPeerConfig()
+                    .setClusterKey(ZKConfig.getZooKeeperClusterKey(configuration))
+                    .setReplicationEndpointImpl(Replicator.class.getName());
+
+            replicationAdmin.addPeer(peerName, peerConfig, tableCFs);
+        }
+    }
+
+
+    public static void startMQ() throws Exception {
+        startNamesrv();
+        startBroker();
+
+        Thread.sleep(2000);
+    }
+
+    private static void startNamesrv() throws Exception {
+
+        NamesrvConfig namesrvConfig = new NamesrvConfig();
+        NettyServerConfig nettyServerConfig = new NettyServerConfig();
+        nettyServerConfig.setListenPort(9876);
+
+        namesrvController = new NamesrvController(namesrvConfig, nettyServerConfig);
+        boolean initResult = namesrvController.initialize();
+        if (!initResult) {
+            namesrvController.shutdown();
+            throw new Exception("Name server controller failed to initialize.");
+        }
+        namesrvController.start();
+    }
+
+    private static void startBroker() throws Exception {
+        System.setProperty(RemotingCommand.REMOTING_VERSION_KEY, Integer.toString(MQVersion.CURRENT_VERSION));
+
+        BrokerConfig brokerConfig = new BrokerConfig();
+        brokerConfig.setNamesrvAddr(NAMESERVER);
+        brokerConfig.setBrokerId(MixAll.MASTER_ID);
+        NettyServerConfig nettyServerConfig = new NettyServerConfig();
+        nettyServerConfig.setListenPort(10911);
+        NettyClientConfig nettyClientConfig = new NettyClientConfig();
+        MessageStoreConfig messageStoreConfig = new MessageStoreConfig();
+
+        brokerController = new BrokerController(brokerConfig, nettyServerConfig, nettyClientConfig, messageStoreConfig);
+        boolean initResult = brokerController.initialize();
+        if (!initResult) {
+            brokerController.shutdown();
+            throw new Exception();
+        }
+        brokerController.start();
+    }
 
     /**
      * This method tests the replicator by writing data from hbase to rocketmq and reading it back.
@@ -118,14 +242,12 @@ public class ReplicatorTest extends BaseTest {
 
             // wait for processQueueTable init
             Thread.sleep(1000);
-
             consumer.shutdown();
 
-            // assertEquals(inTransaction.toJson(), );
+            assertEquals(inTransaction.toJson(), receiveMsg);
         } finally {
             removePeer();
         }
-
     }
 
     private long getMessageQueueOffset(DefaultMQPullConsumer consumer, MessageQueue queue) throws MQClientException {
@@ -168,7 +290,7 @@ public class ReplicatorTest extends BaseTest {
                 hTable.put(put);
 
                 List<Cell> cells = put.getFamilyCellMap().get(family);
-                transaction.addRow(super.TABLE_NAME, rowKey, cells);
+                transaction.addRow(TABLE_NAME_STR, rowKey, cells);
             }
         }
         return transaction;
@@ -186,4 +308,18 @@ public class ReplicatorTest extends BaseTest {
         }
     }
 
+    @After
+    public void tearDown() throws Exception {
+        if (brokerController != null) {
+            brokerController.shutdown();
+        }
+
+        if (namesrvController != null) {
+            namesrvController.shutdown();
+        }
+
+        if(utility != null) {
+            utility.shutdownMiniCluster();
+        }
+    }
 }
