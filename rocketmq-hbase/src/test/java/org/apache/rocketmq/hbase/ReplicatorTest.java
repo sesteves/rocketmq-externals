@@ -35,6 +35,7 @@ import org.apache.rocketmq.client.exception.MQClientException;
 import org.apache.rocketmq.common.message.MessageExt;
 import org.apache.rocketmq.common.message.MessageQueue;
 import org.apache.rocketmq.common.protocol.heartbeat.MessageModel;
+import org.junit.Assert;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -48,6 +49,7 @@ import java.util.Random;
 import java.util.Set;
 
 import static org.apache.hadoop.hbase.util.Bytes.toBytes;
+import static org.junit.Assert.assertEquals;
 
 public class ReplicatorTest extends BaseTest {
 
@@ -119,9 +121,7 @@ public class ReplicatorTest extends BaseTest {
 
             consumer.shutdown();
 
-
-            // TODO complete assert equals
-
+            // assertEquals(inTransaction.toJson(), );
         } finally {
             removePeer();
         }
