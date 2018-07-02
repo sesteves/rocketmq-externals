@@ -17,27 +17,41 @@
 package org.apache.rocketmq.hbase;
 
 import com.alibaba.fastjson.JSONObject;
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.hbase.Cell;
-import org.apache.hadoop.hbase.protobuf.generated.CellProtos;
-
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import org.apache.hadoop.hbase.Cell;
+import org.apache.hadoop.hbase.protobuf.generated.CellProtos;
 
+/**
+ * This class represents a transaction that contains a fixed amount of HBase rows that are to be pushed together to
+ * RocketMQ.
+ */
 public class Transaction {
-
 
     private final int maxTransactionRows;
 
     private List<DataRow> rows = new LinkedList<>();
 
+    /**
+     * Constructor.
+     *
+     * @param maxTransactionRows number of maximum rows supported by this transaction
+     */
     public Transaction(int maxTransactionRows) {
         this.maxTransactionRows = maxTransactionRows;
     }
 
+    /**
+     * Adds a row to this transaction.
+     *
+     * @param tableName the name of the HBase table
+     * @param rowKey the row key
+     * @param cells the cells
+     * @return true if more rows can be added to this transaction; false otherwise.
+     */
     public boolean addRow(String tableName, byte[] rowKey, List<Cell> cells) {
 
         final Cell cell = cells.get(0);
@@ -81,6 +95,11 @@ public class Transaction {
 ////        return columns;
 //    }
 
+    /**
+     * Converts this transaction to json.
+     *
+     * @return a string with the json representation of this transaction
+     */
     public String toJson() {
         Map<String, Object> map = new HashMap<>();
         List<Map<String, Object>> rowsMap = rows.stream().map(row -> row.toMap()).collect(Collectors.toList());

@@ -28,6 +28,9 @@ import java.util.Map;
 
 import static java.util.stream.Collectors.groupingBy;
 
+/**
+ * This class represents a HBase data row.
+ */
 public class DataRow {
     private Logger logger = LoggerFactory.getLogger(DataRow.class);
 
@@ -39,6 +42,14 @@ public class DataRow {
 
     private List<Cell> cells;
 
+    /**
+     * Constructor.
+     *
+     * @param type the type of operation, put or delete
+     * @param table the table
+     * @param row the row key
+     * @param cells the cells
+     */
     public DataRow(String type, String table, byte[] row, List<Cell> cells) {
         this.type = type;
         this.table = table;
@@ -46,6 +57,11 @@ public class DataRow {
         this.cells = cells;
     }
 
+    /**
+     * Converts this data row to a map.
+     *
+     * @return a map structure containing a representation of this row
+     */
     public Map<String, Object> toMap() {
         final Map<String, Object> dataMap = new HashMap<>();
 

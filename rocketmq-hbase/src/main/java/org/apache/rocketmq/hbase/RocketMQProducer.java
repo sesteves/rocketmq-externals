@@ -14,7 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.rocketmq.hbase;
 
 import org.apache.rocketmq.client.exception.MQClientException;
@@ -24,6 +23,9 @@ import org.apache.rocketmq.common.message.Message;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * This class represents the RocketMQ producer that effectively pushes the messages to the RocketMQ server.
+ */
 public class RocketMQProducer {
     public static final String PRODUCER_GROUP_NAME = "HBASE_PRODUCER_GROUP";
 
@@ -35,11 +37,22 @@ public class RocketMQProducer {
 
     private String topic;
 
+    /**
+     * Constructor.
+     *
+     * @param namesrvAddr the nameserver address
+     * @param topic the topic to write to
+     */
     public RocketMQProducer(String namesrvAddr, String topic) {
         this.namesrvAddr = namesrvAddr;
         this.topic = topic;
     }
 
+    /**
+     * Starts the producer.
+     *
+     * @throws MQClientException
+     */
     public void start() throws MQClientException {
         producer = new DefaultMQProducer(PRODUCER_GROUP_NAME);
         producer.setInstanceName("producer-" + System.currentTimeMillis());
@@ -47,6 +60,13 @@ public class RocketMQProducer {
         producer.start();
     }
 
+    /**
+     * Pushes messages to the RocketMQ server.
+     *
+     * @param json the message to be sent in json format
+     * @return the result status code
+     * @throws Exception
+     */
     public long push(String json) throws Exception {
         LOGGER.debug(json);
 
@@ -56,6 +76,9 @@ public class RocketMQProducer {
         return sendResult.getQueueOffset();
     }
 
+    /**
+     * Stops the RocketMQ producer.
+     */
     public void stop() {
         producer.shutdown();
     }

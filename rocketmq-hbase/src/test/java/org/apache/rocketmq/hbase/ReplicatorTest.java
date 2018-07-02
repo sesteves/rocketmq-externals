@@ -36,6 +36,7 @@ import org.apache.rocketmq.broker.BrokerController;
 import org.apache.rocketmq.client.consumer.DefaultMQPullConsumer;
 import org.apache.rocketmq.client.consumer.PullResult;
 import org.apache.rocketmq.client.consumer.PullStatus;
+import org.apache.rocketmq.client.exception.MQBrokerException;
 import org.apache.rocketmq.client.exception.MQClientException;
 import org.apache.rocketmq.common.BrokerConfig;
 import org.apache.rocketmq.common.MQVersion;
@@ -45,6 +46,7 @@ import org.apache.rocketmq.common.message.MessageQueue;
 import org.apache.rocketmq.common.namesrv.NamesrvConfig;
 import org.apache.rocketmq.common.protocol.heartbeat.MessageModel;
 import org.apache.rocketmq.namesrv.NamesrvController;
+import org.apache.rocketmq.remoting.exception.RemotingException;
 import org.apache.rocketmq.remoting.netty.NettyClientConfig;
 import org.apache.rocketmq.remoting.netty.NettyServerConfig;
 import org.apache.rocketmq.remoting.protocol.RemotingCommand;
@@ -65,6 +67,9 @@ import java.util.Set;
 import static org.apache.hadoop.hbase.util.Bytes.toBytes;
 import static org.junit.Assert.assertEquals;
 
+/**
+ * This class tests the replicator by writing data from hbase to rocketmq and reading it back.
+ */
 public class ReplicatorTest {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ReplicatorTest.class);
@@ -87,12 +92,17 @@ public class ReplicatorTest {
 
     private static BrokerController brokerController;
 
-    protected HBaseTestingUtility utility;
+    private HBaseTestingUtility utility;
 
-    protected int numRegionServers;
+    private int numRegionServers;
 
     private int batchSize = 100;
 
+    /**
+     * This method starts the HBase cluster and the RocketMQ server.
+     *
+     * @throws Exception
+     */
     @Before
     public void setUp() throws Exception {
         final Configuration hbaseConf = HBaseConfiguration.create();
@@ -106,11 +116,7 @@ public class ReplicatorTest {
 
         utility = new HBaseTestingUtility(hbaseConf);
         utility.startMiniCluster();
-        numRegionServers = utility.getHBaseCluster().getRegionServerThreads().size();
-
-        utility = new HBaseTestingUtility(hbaseConf);
-        utility.startMiniCluster();
-        numRegionServers = utility.getHBaseCluster().getRegionServerThreads().size();
+        utility.getHBaseCluster().getRegionServerThreads().size();
 
         // setup and start RocketMQ
         startMQ();
@@ -135,7 +141,7 @@ public class ReplicatorTest {
      * @throws ReplicationException
      * @throws IOException
      */
-    protected void addPeer(final Configuration configuration,String peerName, Map<TableName, List<String>> tableCFs)
+    private void addPeer(final Configuration configuration,String peerName, Map<TableName, List<String>> tableCFs)
             throws ReplicationException, IOException {
         try (ReplicationAdmin replicationAdmin = new ReplicationAdmin(configuration)) {
             ReplicationPeerConfig peerConfig = new ReplicationPeerConfig()
@@ -146,14 +152,23 @@ public class ReplicatorTest {
         }
     }
 
-
-    public static void startMQ() throws Exception {
+    /**
+     * This method starts the RocketMQ server.
+     *
+     * @throws Exception
+     */
+    private static void startMQ() throws Exception {
         startNamesrv();
         startBroker();
 
         Thread.sleep(2000);
     }
 
+    /**
+     * This method starts the RocketMQ nameserver.
+     *
+     * @throws Exception
+     */
     private static void startNamesrv() throws Exception {
 
         NamesrvConfig namesrvConfig = new NamesrvConfig();
@@ -169,6 +184,11 @@ public class ReplicatorTest {
         namesrvController.start();
     }
 
+    /**
+     * This method starts the RocketMQ broker.
+     *
+     * @throws Exception
+     */
     private static void startBroker() throws Exception {
         System.setProperty(RemotingCommand.REMOTING_VERSION_KEY, Integer.toString(MQVersion.CURRENT_VERSION));
 
@@ -191,9 +211,17 @@ public class ReplicatorTest {
 
     /**
      * This method tests the replicator by writing data from hbase to rocketmq and reading it back.
+     *
+     * @throws IOException
+     * @throws ReplicationException
+     * @throws InterruptedException
+     * @throws MQClientException
+     * @throws RemotingException
+     * @throws MQBrokerException
      */
     @Test
-    public void testCustomReplicationEndpoint() throws Exception {
+    public void testCustomReplicationEndpoint() throws IOException, ReplicationException, InterruptedException,
+            MQClientException, RemotingException, MQBrokerException {
         try {
             createTestTable();
 
@@ -250,6 +278,14 @@ public class ReplicatorTest {
         }
     }
 
+    /**
+     * Gets the message queue offset.
+     *
+     * @param consumer the rocketmq consumer
+     * @param queue the queue from where to consume the message
+     * @return the offset
+     * @throws MQClientException
+     */
     private long getMessageQueueOffset(DefaultMQPullConsumer consumer, MessageQueue queue) throws MQClientException {
         long offset = consumer.fetchConsumeOffset(queue, false);
         if (offset < 0) {
@@ -259,7 +295,7 @@ public class ReplicatorTest {
     }
 
     /**
-     * Creates the hbase table with a scope set to Global
+     * Creates the HBase table with a scope set to global.
      *
      * @throws IOException
      */
@@ -275,7 +311,7 @@ public class ReplicatorTest {
     }
 
     /**
-     * Adds data to the previously created HBase table
+     * Adds data to the previously created HBase table.
      *
      * @throws IOException
      */
@@ -297,7 +333,7 @@ public class ReplicatorTest {
     }
 
     /**
-     * Removes the peer
+     * Removes the HBase peer.
      *
      * @throws IOException
      * @throws ReplicationException
@@ -308,18 +344,23 @@ public class ReplicatorTest {
         }
     }
 
+    /**
+     * Shuts down the HBase cluster and the RocketMQ server.
+     *
+     * @throws Exception
+     */
     @After
     public void tearDown() throws Exception {
+        if(utility != null) {
+            utility.shutdownMiniCluster();
+        }
+
         if (brokerController != null) {
             brokerController.shutdown();
         }
 
         if (namesrvController != null) {
             namesrvController.shutdown();
-        }
-
-        if(utility != null) {
-            utility.shutdownMiniCluster();
         }
     }
 }
