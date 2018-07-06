@@ -1,4 +1,4 @@
-# RocketMQ-HBase
+# RocketMQ-HBase Sink
 
 ## Overview
 
