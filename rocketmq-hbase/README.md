@@ -4,7 +4,7 @@
 
 This project replicates HBase tables to RocketMQ topics.
 
-[HBase replicator (sink)](rocketmq-hbase-sink/README.md)
+[HBase replicator (sink)](rocketmq-hbase-sink)
 
 
 ## Pre-requisites
