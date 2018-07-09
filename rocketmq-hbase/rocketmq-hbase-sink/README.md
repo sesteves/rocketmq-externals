@@ -14,7 +14,7 @@ This project replicates HBase tables to RocketMQ topics.
 - HBase cluster is configured with the setting `hbase.replication` to `true` in hbase-site.xml
 
 ## Properties
-Have the below properties set in hbase-site.xml and add it to the HBase region server classpath.
+Have the below properties set in `hbase-site.xml` and add it to the HBase region server classpath.
 
 |key               |nullable|default    |description|
 |------------------|--------|-----------|-----------|
