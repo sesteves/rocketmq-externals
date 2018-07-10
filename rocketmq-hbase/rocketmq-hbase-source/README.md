@@ -20,5 +20,8 @@ Have the below properties set in `rocketmq_hbase.conf`
 
 |key               |nullable|default    |description|
 |------------------|--------|-----------|-----------|
-|mqNamesrvAddr     |false   |           |RocketMQ name server address (e.g.,127.0.0.1:9876)|
-|mqTopics    |  false |  | List of RocketMQ topics, separated by comma, to replicate to HBase (e.g., topic1,topic2,topic3) | 
+| nameserver     |false   |           |RocketMQ name server address (e.g.,127.0.0.1:9876)|
+| consumerGroup | true     |"HBASE_CONSUMER_GROUP"| The consumer group name|
+| messageModel  | true     | "BROADCASTING"       |RocketMQ message model, 'BROADCASTING' or 'CLUSTERING'|
+| topics    |  false |  | List of RocketMQ topics, separated by comma, to replicate to HBase (e.g., topic1,topic2,topic3) | 
+| batchSize     | true     | 32                   | The maximum number of messages to be consumed in batch from RocketMq|

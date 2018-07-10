@@ -24,10 +24,15 @@ import java.util.Properties;
 
 public class Config {
 
-    private String mqNamesrvAddr;
-    private List<String> mqTopics;
+    private String nameserver;
 
-    private int maxTransactionRows = 100;
+    private String consumerGroup;
+
+    private String messageModel;
+
+    private List<String> topics;
+
+    private int batchSize = 32;
 
     public void load() throws IOException {
         InputStream in = Config.class.getClassLoader().getResourceAsStream("rocketmq_hbase.conf");
@@ -77,15 +82,23 @@ public class Config {
         }
     }
 
-    public String getMqNamesrvAddr() {
-        return mqNamesrvAddr;
+    public String getNameserver() {
+        return nameserver;
     }
 
-    public List<String> getMqTopics() {
-        return mqTopics;
+    public String getConsumerGroup() {
+        return consumerGroup;
     }
 
-    public int getMaxTransactionRows() {
-        return maxTransactionRows;
+    public String getMessageModel() {
+        return messageModel;
+    }
+
+    public List<String> getTopics() {
+        return topics;
+    }
+
+    public int getBatchSize() {
+        return batchSize;
     }
 }

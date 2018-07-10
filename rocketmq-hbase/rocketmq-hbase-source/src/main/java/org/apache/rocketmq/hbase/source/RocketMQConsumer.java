@@ -16,9 +16,60 @@
  */
 package org.apache.rocketmq.hbase.source;
 
+import java.util.Set;
+import org.apache.rocketmq.client.consumer.DefaultMQPullConsumer;
+import org.apache.rocketmq.client.exception.MQClientException;
+import org.apache.rocketmq.common.message.MessageQueue;
+import org.apache.rocketmq.common.protocol.heartbeat.MessageModel;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  *
  */
 public class RocketMQConsumer {
 
+    private static final Logger logger = LoggerFactory.getLogger(RocketMQConsumer.class);
+
+    private DefaultMQPullConsumer consumer;
+
+    private String namesrvAddr;
+
+    private String topic;
+
+    private MessageModel messageModel;
+
+    public RocketMQConsumer(Config config) {
+        this.namesrvAddr = config.getNameserver();
+        this.messageModel = MessageModel.valueOf(config.getMessageModel());
+    }
+
+    public void start() throws MQClientException {
+        consumer = new DefaultMQPullConsumer();
+        consumer.setNamesrvAddr(namesrvAddr);
+        consumer.setMessageModel(messageModel);
+        consumer.registerMessageQueueListener(topic, null);
+        consumer.start();
+    }
+
+    public void pull() throws MQClientException {
+        Set<MessageQueue> queues = consumer.fetchSubscribeMessageQueues(topic);
+//        for (MessageQueue queue : queues) {
+//            long offset = getMessageQueueOffset(queue);
+//            PullResult pullResult = consumer.pull(queue, tag, offset, batchSize);
+//        }
+    }
+
+    private long getMessageQueueOffset(MessageQueue queue) throws MQClientException {
+        long offset = consumer.fetchConsumeOffset(queue, false);
+        if (offset < 0) {
+            offset = 0;
+        }
+
+        return offset;
+    }
+
+    public void stop() {
+        consumer.shutdown();
+    }
 }

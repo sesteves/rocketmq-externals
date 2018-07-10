@@ -16,34 +16,29 @@
  */
 package org.apache.rocketmq.hbase.source;
 
-import java.io.IOException;
+import java.util.concurrent.BlockingQueue;
+import org.apache.rocketmq.client.consumer.DefaultMQPullConsumer;
+import org.apache.rocketmq.common.message.Message;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  *
  */
-public class RocketMQSource {
+public class MessageConsumer {
 
-    private Logger logger = LoggerFactory.getLogger(RocketMQSource.class);
+    private static final Logger logger = LoggerFactory.getLogger(MessageConsumer.class);
 
-    private Config config;
+    private BlockingQueue<Message> queue;
 
-    public static void main(String[] args) {
-        final RocketMQSource rocketMQSource = new RocketMQSource();
-        rocketMQSource.start();
+    private RocketMQConsumer consumer;
+
+    public MessageConsumer(Config config, BlockingQueue queue) {
+        this.queue = queue;
+
+        consumer = new RocketMQConsumer(config);
     }
 
     public void start() {
-        try {
-            config = new Config();
-            config.load();
-
-            MessageProcessor processor = new MessageProcessor(config);
-
-        } catch (IOException e) {
-            logger.error("Error on starting RocketMQ source.", e);
-            System.exit(1);
-        }
     }
 }

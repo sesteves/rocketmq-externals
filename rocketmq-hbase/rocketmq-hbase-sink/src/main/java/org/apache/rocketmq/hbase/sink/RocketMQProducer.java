@@ -29,7 +29,7 @@ import org.slf4j.LoggerFactory;
 public class RocketMQProducer {
     public static final String PRODUCER_GROUP_NAME = "HBASE_PRODUCER_GROUP";
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(RocketMQProducer.class);
+    private static final Logger logger = LoggerFactory.getLogger(RocketMQProducer.class);
 
     private DefaultMQProducer producer;
 
@@ -68,7 +68,7 @@ public class RocketMQProducer {
      * @throws Exception
      */
     public long push(String json) throws Exception {
-        LOGGER.debug(json);
+        logger.debug(json);
 
         Message message = new Message(topic, json.getBytes("UTF-8"));
         SendResult sendResult = producer.send(message);

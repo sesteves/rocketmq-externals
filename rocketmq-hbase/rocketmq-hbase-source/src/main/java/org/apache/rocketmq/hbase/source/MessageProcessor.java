@@ -16,18 +16,53 @@
  */
 package org.apache.rocketmq.hbase.source;
 
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
+import org.apache.rocketmq.common.message.Message;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  *
  */
 public class MessageProcessor {
 
+    private Logger logger = LoggerFactory.getLogger(MessageProcessor.class);
+
+    private BlockingQueue<Message> queue;
+
+    private MessageConsumer consumer;
+
+    /**
+     *
+     * @param config
+     */
+    public MessageProcessor(Config config) {
+        // TODO consider adding queue capacity for performance reasons
+        queue = new LinkedBlockingQueue<>();
+        consumer = new MessageConsumer(config, queue);
+    }
+
+    /**
+     *
+     */
     private void doProcess() {
         while(true) {
 
+            try {
+                Message message = queue.poll(1000, TimeUnit.MILLISECONDS);
+                if (message == null) {
+                    // checkConnection();
+                    continue;
+                }
 
 
 
 
+            } catch(Exception e) {
+                logger.error("Error while processing message.", e);
+            }
         }
     }
 
