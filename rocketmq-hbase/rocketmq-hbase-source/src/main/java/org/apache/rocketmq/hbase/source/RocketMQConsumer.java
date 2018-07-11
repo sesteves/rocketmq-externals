@@ -16,11 +16,15 @@
  */
 package org.apache.rocketmq.hbase.source;
 
+import java.util.List;
 import java.util.Set;
 import org.apache.rocketmq.client.consumer.DefaultMQPullConsumer;
+import org.apache.rocketmq.client.consumer.PullResult;
+import org.apache.rocketmq.client.exception.MQBrokerException;
 import org.apache.rocketmq.client.exception.MQClientException;
 import org.apache.rocketmq.common.message.MessageQueue;
 import org.apache.rocketmq.common.protocol.heartbeat.MessageModel;
+import org.apache.rocketmq.remoting.exception.RemotingException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,25 +43,33 @@ public class RocketMQConsumer {
 
     private MessageModel messageModel;
 
+    private Set<String> topics;
+
+    private int batchSize;
+
     public RocketMQConsumer(Config config) {
         this.namesrvAddr = config.getNameserver();
         this.messageModel = MessageModel.valueOf(config.getMessageModel());
+        this.topics = config.getTopics();
+        this.batchSize = config.getBatchSize();
     }
 
     public void start() throws MQClientException {
         consumer = new DefaultMQPullConsumer();
         consumer.setNamesrvAddr(namesrvAddr);
         consumer.setMessageModel(messageModel);
-        consumer.registerMessageQueueListener(topic, null);
+        consumer.setRegisterTopics(topics);
         consumer.start();
     }
 
-    public void pull() throws MQClientException {
+    public void pull() throws MQClientException, RemotingException, InterruptedException, MQBrokerException {
+
         Set<MessageQueue> queues = consumer.fetchSubscribeMessageQueues(topic);
-//        for (MessageQueue queue : queues) {
-//            long offset = getMessageQueueOffset(queue);
-//            PullResult pullResult = consumer.pull(queue, tag, offset, batchSize);
-//        }
+        for (MessageQueue queue : queues) {
+            long offset = getMessageQueueOffset(queue);
+            PullResult pullResult = consumer.pull(queue, null, offset, batchSize);
+        }
+
     }
 
     private long getMessageQueueOffset(MessageQueue queue) throws MQClientException {

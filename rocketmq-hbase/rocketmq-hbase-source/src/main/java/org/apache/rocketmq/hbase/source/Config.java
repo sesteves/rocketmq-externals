@@ -21,6 +21,7 @@ import java.io.InputStream;
 import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Properties;
+import java.util.Set;
 
 public class Config {
 
@@ -30,7 +31,7 @@ public class Config {
 
     private String messageModel;
 
-    private List<String> topics;
+    private Set<String> topics;
 
     private int batchSize = 32;
 
@@ -94,7 +95,7 @@ public class Config {
         return messageModel;
     }
 
-    public List<String> getTopics() {
+    public Set<String> getTopics() {
         return topics;
     }
 
