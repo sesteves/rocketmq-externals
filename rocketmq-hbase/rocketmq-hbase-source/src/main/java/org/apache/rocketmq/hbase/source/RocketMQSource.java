@@ -16,7 +16,6 @@
  */
 package org.apache.rocketmq.hbase.source;
 
-import java.io.IOException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,11 +38,11 @@ public class RocketMQSource {
             config = new Config();
             config.load();
 
-            MessageProcessor processor = new MessageProcessor(config);
+            final MessageProcessor processor = new MessageProcessor(config);
+            processor.start();
 
-        } catch (IOException e) {
-            logger.error("Error on starting RocketMQ source.", e);
-            System.exit(1);
+        } catch (Exception e) {
+            logger.error("Error on starting RocketMQSource.", e);
         }
     }
 }

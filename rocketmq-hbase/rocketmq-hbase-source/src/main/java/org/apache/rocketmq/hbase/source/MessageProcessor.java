@@ -16,10 +16,11 @@
  */
 package org.apache.rocketmq.hbase.source;
 
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.TimeUnit;
-import org.apache.rocketmq.common.message.Message;
+import java.io.IOException;
+import java.util.List;
+import java.util.Map;
+import org.apache.rocketmq.client.exception.MQClientException;
+import org.apache.rocketmq.common.message.MessageExt;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,40 +29,43 @@ import org.slf4j.LoggerFactory;
  */
 public class MessageProcessor {
 
-    private Logger logger = LoggerFactory.getLogger(MessageProcessor.class);
+    private static final Logger logger = LoggerFactory.getLogger(MessageProcessor.class);
 
-    private BlockingQueue<Message> queue;
+    private RocketMQConsumer consumer;
 
-    private MessageConsumer consumer;
+    private HBaseClient hbaseClient;
 
     /**
-     *
      * @param config
      */
     public MessageProcessor(Config config) {
-        // TODO consider adding queue capacity for performance reasons
-        queue = new LinkedBlockingQueue<>();
-        consumer = new MessageConsumer(config, queue);
+        consumer = new RocketMQConsumer(config);
+        hbaseClient = new HBaseClient();
+    }
+
+    public void start() throws MQClientException, IOException {
+        consumer.start();
+        hbaseClient.start();
+        doProcess();
     }
 
     /**
      *
      */
     private void doProcess() {
-        while(true) {
+        while (true) {
 
             try {
-                Message message = queue.poll(1000, TimeUnit.MILLISECONDS);
-                if (message == null) {
-                    // checkConnection();
-                    continue;
+                final Map<String, List<MessageExt>> messagesPerTopic = consumer.pull();
+                for(Map.Entry<String, List<MessageExt>> entry : messagesPerTopic.entrySet()) {
+                    final String topic = entry.getKey();
+                    final List<MessageExt> messages = entry.getValue();
+                    hbaseClient.put(topic, messages);
                 }
 
 
-
-
-            } catch(Exception e) {
-                logger.error("Error while processing message.", e);
+            } catch (Exception e) {
+                logger.error("Error while processing messages.", e);
             }
         }
     }

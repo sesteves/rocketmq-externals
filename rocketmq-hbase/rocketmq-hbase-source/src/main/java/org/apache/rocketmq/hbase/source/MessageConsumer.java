@@ -17,7 +17,6 @@
 package org.apache.rocketmq.hbase.source;
 
 import java.util.concurrent.BlockingQueue;
-import org.apache.rocketmq.client.consumer.DefaultMQPullConsumer;
 import org.apache.rocketmq.common.message.Message;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,8 +34,6 @@ public class MessageConsumer {
 
     public MessageConsumer(Config config, BlockingQueue queue) {
         this.queue = queue;
-
-        consumer = new RocketMQConsumer(config);
     }
 
     public void start() {

@@ -32,7 +32,7 @@ import static java.util.stream.Collectors.groupingBy;
  * This class represents a HBase data row.
  */
 public class DataRow {
-    private Logger logger = LoggerFactory.getLogger(DataRow.class);
+    private static final Logger logger = LoggerFactory.getLogger(DataRow.class);
 
     private String type;
 

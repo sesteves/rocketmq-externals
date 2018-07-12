@@ -16,12 +16,16 @@
  */
 package org.apache.rocketmq.hbase.source;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import org.apache.rocketmq.client.consumer.DefaultMQPullConsumer;
 import org.apache.rocketmq.client.consumer.PullResult;
+import org.apache.rocketmq.client.consumer.PullStatus;
 import org.apache.rocketmq.client.exception.MQBrokerException;
 import org.apache.rocketmq.client.exception.MQClientException;
+import org.apache.rocketmq.common.message.MessageExt;
 import org.apache.rocketmq.common.message.MessageQueue;
 import org.apache.rocketmq.common.protocol.heartbeat.MessageModel;
 import org.apache.rocketmq.remoting.exception.RemotingException;
@@ -38,8 +42,6 @@ public class RocketMQConsumer {
     private DefaultMQPullConsumer consumer;
 
     private String namesrvAddr;
-
-    private String topic;
 
     private MessageModel messageModel;
 
@@ -62,14 +64,24 @@ public class RocketMQConsumer {
         consumer.start();
     }
 
-    public void pull() throws MQClientException, RemotingException, InterruptedException, MQBrokerException {
+    public Map<String, List<MessageExt>> pull() throws MQClientException, RemotingException, InterruptedException, MQBrokerException {
+        final Map<String, List<MessageExt>> messagesPerTopic = new HashMap<>();
+        for (String topic : topics) {
+            final Set<MessageQueue> msgQueues = consumer.fetchSubscribeMessageQueues(topic);
+            for (MessageQueue msgQueue : msgQueues) {
+                final long offset = getMessageQueueOffset(msgQueue);
+                final PullResult pullResult = consumer.pull(msgQueue, null, offset, batchSize);
 
-        Set<MessageQueue> queues = consumer.fetchSubscribeMessageQueues(topic);
-        for (MessageQueue queue : queues) {
-            long offset = getMessageQueueOffset(queue);
-            PullResult pullResult = consumer.pull(queue, null, offset, batchSize);
+                if (pullResult.getPullStatus() == PullStatus.FOUND) {
+                    messagesPerTopic.put(topic, pullResult.getMsgFoundList());
+//                    for (MessageExt msg : pullResult.getMsgFoundList()) {
+//                        messages.add(msg);
+//                        logger.debug("Pulled message, body={}", new String(msg.getBody(), "UTF-8"));
+//                    }
+                }
+            }
         }
-
+        return messagesPerTopic;
     }
 
     private long getMessageQueueOffset(MessageQueue queue) throws MQClientException {

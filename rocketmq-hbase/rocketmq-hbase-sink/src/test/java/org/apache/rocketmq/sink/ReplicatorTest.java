@@ -75,8 +75,6 @@ import static org.junit.Assert.assertEquals;
  */
 public class ReplicatorTest {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(ReplicatorTest.class);
-
     private static final String ROCKETMQ_TOPIC = "hbase-rocketmq-topic-test";
 
     private static final String NAMESERVER = "localhost:9876";
@@ -90,6 +88,8 @@ public class ReplicatorTest {
     private final String COLUMN_FAMILY = "d";
     private final String QUALIFIER = "q";
     private final String VALUE = "v";
+
+    private static final Logger logger = LoggerFactory.getLogger(ReplicatorTest.class);
 
     private static NamesrvController namesrvController;
 
@@ -262,14 +262,14 @@ public class ReplicatorTest {
                         receiveMsg = new String(body, "UTF-8");
                         // String[] receiveMsgKv = receiveMsg.split(",");
                         // msgs.remove(receiveMsgKv[1]);
-                        LOGGER.info("receive message : {}", receiveMsg);
+                        logger.info("receive message : {}", receiveMsg);
                         receiveNum++;
                     }
                     long nextBeginOffset = pullResult.getNextBeginOffset();
                     consumer.updateConsumeOffset(queue, offset);
                 }
             }
-            LOGGER.info("receive message num={}", receiveNum);
+            logger.info("receive message num={}", receiveNum);
 
             // wait for processQueueTable init
             Thread.sleep(1000);

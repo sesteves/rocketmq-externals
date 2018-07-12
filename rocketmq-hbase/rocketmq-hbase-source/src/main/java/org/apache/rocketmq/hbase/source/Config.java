@@ -19,11 +19,15 @@ package org.apache.rocketmq.hbase.source;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Method;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Properties;
 import java.util.Set;
 
 public class Config {
+
+    private static final String TOPICS_SEPARATOR = ",";
 
     private String nameserver;
 
@@ -31,7 +35,7 @@ public class Config {
 
     private String messageModel;
 
-    private Set<String> topics;
+    private String topics;
 
     private int batchSize = 32;
 
@@ -96,7 +100,10 @@ public class Config {
     }
 
     public Set<String> getTopics() {
-        return topics;
+        final String[] topicsArr = topics.split(TOPICS_SEPARATOR);
+        final Set<String> topicsSet = new HashSet<>();
+        Collections.addAll(topicsSet, topicsArr);
+        return topicsSet;
     }
 
     public int getBatchSize() {
