@@ -23,5 +23,7 @@ Have the below properties set in `rocketmq_hbase.conf`
 | nameserver     |false   |           |RocketMQ name server address (e.g.,127.0.0.1:9876)|
 | consumerGroup | true     |"HBASE_CONSUMER_GROUP"| The consumer group name|
 | messageModel  | true     | "BROADCASTING"       |RocketMQ message model, 'BROADCASTING' or 'CLUSTERING'|
-| topics    |  false |  | List of RocketMQ topics, separated by comma, to replicate to HBase (e.g., topic1,topic2,topic3) | 
-| batchSize     | true     | 32                   | The maximum number of messages to be consumed in batch from RocketMq|
+| topics    |  false |  | A comma separated list of RocketMQ topics to replicate to HBase (e.g., topic1,topic2,topic3) |
+| zookeeperAddress | true | localhost | A comma separated list of the IP addresses of all ZooKeeper servers in the cluster | 
+| batchSize     | true     | 32                   | The maximum number of messages to be consumed in batch from RocketMQ|
+| pullInterval | true | 1000 | Time in milliseconds to wait between consecutive pulls |

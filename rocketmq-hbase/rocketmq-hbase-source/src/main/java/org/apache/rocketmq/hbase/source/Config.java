@@ -31,13 +31,18 @@ public class Config {
 
     private String nameserver;
 
-    private String consumerGroup;
+    private String consumerGroup = "HBASE_CONSUMER_GROUP";
 
-    private String messageModel;
+    private String messageModel = "BROADCASTING";
 
     private String topics;
 
+    private String zookeeperAddress = "localhost";
+
+    private long pullInterval = 1000;
+
     private int batchSize = 32;
+
 
     public void load() throws IOException {
         InputStream in = Config.class.getClassLoader().getResourceAsStream("rocketmq_hbase.conf");
@@ -104,6 +109,14 @@ public class Config {
         final Set<String> topicsSet = new HashSet<>();
         Collections.addAll(topicsSet, topicsArr);
         return topicsSet;
+    }
+
+    public String getZookeeperAddress() {
+        return zookeeperAddress;
+    }
+
+    public long getPullInterval() {
+        return pullInterval;
     }
 
     public int getBatchSize() {

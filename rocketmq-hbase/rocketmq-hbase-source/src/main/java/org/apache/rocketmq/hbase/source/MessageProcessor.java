@@ -35,28 +35,45 @@ public class MessageProcessor {
 
     private HBaseClient hbaseClient;
 
+    private long pullInterval;
+
     /**
-     * @param config
+     * Constructor.
+     *
+     * @param config the configuration
      */
     public MessageProcessor(Config config) {
+        pullInterval = config.getPullInterval();
         consumer = new RocketMQConsumer(config);
-        hbaseClient = new HBaseClient();
+        hbaseClient = new HBaseClient(config);
     }
 
+    /**
+     *
+     * @throws MQClientException
+     * @throws IOException
+     */
     public void start() throws MQClientException, IOException {
         consumer.start();
         hbaseClient.start();
         doProcess();
+
+        logger.info("Message processor started.");
     }
 
     /**
      *
      */
     private void doProcess() {
+
+        Map<String, List<MessageExt>> messagesPerTopic;
         while (true) {
 
             try {
-                final Map<String, List<MessageExt>> messagesPerTopic = consumer.pull();
+                while((messagesPerTopic = consumer.pull()) == null) {
+                    Thread.sleep(pullInterval);
+                }
+
                 for(Map.Entry<String, List<MessageExt>> entry : messagesPerTopic.entrySet()) {
                     final String topic = entry.getKey();
                     final List<MessageExt> messages = entry.getValue();

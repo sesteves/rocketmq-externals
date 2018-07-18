@@ -43,6 +43,8 @@ public class RocketMQConsumer {
 
     private String namesrvAddr;
 
+    private String consumerGroup;
+
     private MessageModel messageModel;
 
     private Set<String> topics;
@@ -51,20 +53,23 @@ public class RocketMQConsumer {
 
     public RocketMQConsumer(Config config) {
         this.namesrvAddr = config.getNameserver();
+        this.consumerGroup = config.getConsumerGroup();
         this.messageModel = MessageModel.valueOf(config.getMessageModel());
         this.topics = config.getTopics();
         this.batchSize = config.getBatchSize();
     }
 
     public void start() throws MQClientException {
-        consumer = new DefaultMQPullConsumer();
+        consumer = new DefaultMQPullConsumer(consumerGroup);
         consumer.setNamesrvAddr(namesrvAddr);
         consumer.setMessageModel(messageModel);
         consumer.setRegisterTopics(topics);
         consumer.start();
     }
 
-    public Map<String, List<MessageExt>> pull() throws MQClientException, RemotingException, InterruptedException, MQBrokerException {
+    public Map<String, List<MessageExt>> pull() throws MQClientException, RemotingException, InterruptedException,
+        MQBrokerException {
+
         final Map<String, List<MessageExt>> messagesPerTopic = new HashMap<>();
         for (String topic : topics) {
             final Set<MessageQueue> msgQueues = consumer.fetchSubscribeMessageQueues(topic);
@@ -74,14 +79,12 @@ public class RocketMQConsumer {
 
                 if (pullResult.getPullStatus() == PullStatus.FOUND) {
                     messagesPerTopic.put(topic, pullResult.getMsgFoundList());
-//                    for (MessageExt msg : pullResult.getMsgFoundList()) {
-//                        messages.add(msg);
-//                        logger.debug("Pulled message, body={}", new String(msg.getBody(), "UTF-8"));
-//                    }
+
+                    // logger.debug("Pulled message, body={}", new String(msg.getBody(), "UTF-8"));
                 }
             }
         }
-        return messagesPerTopic;
+        return messagesPerTopic.size() > 0 ? messagesPerTopic : null;
     }
 
     private long getMessageQueueOffset(MessageQueue queue) throws MQClientException {
