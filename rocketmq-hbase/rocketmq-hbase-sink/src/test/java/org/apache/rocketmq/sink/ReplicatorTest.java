@@ -46,7 +46,6 @@ import org.apache.rocketmq.common.message.MessageQueue;
 import org.apache.rocketmq.common.namesrv.NamesrvConfig;
 import org.apache.rocketmq.common.protocol.heartbeat.MessageModel;
 import org.apache.rocketmq.hbase.sink.Replicator;
-import org.apache.rocketmq.hbase.sink.RocketMQProducer;
 import org.apache.rocketmq.hbase.sink.Transaction;
 import org.apache.rocketmq.namesrv.NamesrvController;
 import org.apache.rocketmq.remoting.exception.RemotingException;
@@ -75,7 +74,9 @@ import static org.junit.Assert.assertEquals;
  */
 public class ReplicatorTest {
 
-    private static final String ROCKETMQ_TOPIC = "hbase-rocketmq-topic-test";
+    private static final String CONSUMER_GROUP_NAME = "HBASE_CONSUMER_GROUP_TEST";
+
+    private static final String ROCKETMQ_TOPIC = "rocketmq-hbase-topic-test";
 
     private static final String NAMESERVER = "localhost:9876";
 
@@ -174,12 +175,12 @@ public class ReplicatorTest {
      */
     private static void startNamesrv() throws Exception {
 
-        NamesrvConfig namesrvConfig = new NamesrvConfig();
+        final NamesrvConfig namesrvConfig = new NamesrvConfig();
         NettyServerConfig nettyServerConfig = new NettyServerConfig();
         nettyServerConfig.setListenPort(9876);
 
         namesrvController = new NamesrvController(namesrvConfig, nettyServerConfig);
-        boolean initResult = namesrvController.initialize();
+        final boolean initResult = namesrvController.initialize();
         if (!initResult) {
             namesrvController.shutdown();
             throw new Exception("Name server controller failed to initialize.");
@@ -195,13 +196,13 @@ public class ReplicatorTest {
     private static void startBroker() throws Exception {
         System.setProperty(RemotingCommand.REMOTING_VERSION_KEY, Integer.toString(MQVersion.CURRENT_VERSION));
 
-        BrokerConfig brokerConfig = new BrokerConfig();
+        final BrokerConfig brokerConfig = new BrokerConfig();
         brokerConfig.setNamesrvAddr(NAMESERVER);
         brokerConfig.setBrokerId(MixAll.MASTER_ID);
-        NettyServerConfig nettyServerConfig = new NettyServerConfig();
+        final NettyServerConfig nettyServerConfig = new NettyServerConfig();
         nettyServerConfig.setListenPort(10911);
-        NettyClientConfig nettyClientConfig = new NettyClientConfig();
-        MessageStoreConfig messageStoreConfig = new MessageStoreConfig();
+        final NettyClientConfig nettyClientConfig = new NettyClientConfig();
+        final MessageStoreConfig messageStoreConfig = new MessageStoreConfig();
 
         brokerController = new BrokerController(brokerConfig, nettyServerConfig, nettyClientConfig, messageStoreConfig);
         boolean initResult = brokerController.initialize();
@@ -225,10 +226,12 @@ public class ReplicatorTest {
     @Test
     public void testCustomReplicationEndpoint() throws IOException, ReplicationException, InterruptedException,
             MQClientException, RemotingException, MQBrokerException {
+
+        final DefaultMQPullConsumer consumer = new DefaultMQPullConsumer(CONSUMER_GROUP_NAME);
         try {
             createTestTable();
 
-            Map<TableName, List<String>> tableCfs = new HashMap<>();
+            final Map<TableName, List<String>> tableCfs = new HashMap<>();
             List<String> cfs = new ArrayList<>();
             cfs.add(COLUMN_FAMILY);
             tableCfs.put(TABLE_NAME, cfs);
@@ -243,7 +246,6 @@ public class ReplicatorTest {
             // wait for data to be replicated
             Thread.sleep(500);
 
-            DefaultMQPullConsumer consumer = new DefaultMQPullConsumer(RocketMQProducer.PRODUCER_GROUP_NAME);
             consumer.setNamesrvAddr(NAMESERVER);
             consumer.setMessageModel(MessageModel.valueOf("BROADCASTING"));
             consumer.registerMessageQueueListener(ROCKETMQ_TOPIC, null);
@@ -273,11 +275,11 @@ public class ReplicatorTest {
 
             // wait for processQueueTable init
             Thread.sleep(1000);
-            consumer.shutdown();
 
             assertEquals(inTransaction.toJson(), receiveMsg);
         } finally {
             removePeer();
+            consumer.shutdown();
         }
     }
 

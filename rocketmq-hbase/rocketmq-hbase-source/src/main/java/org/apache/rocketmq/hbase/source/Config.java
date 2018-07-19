@@ -29,7 +29,7 @@ public class Config {
 
     private static final String TOPICS_SEPARATOR = ",";
 
-    private String nameserver;
+    private String nameserver = "localhost:9876";
 
     private String consumerGroup = "HBASE_CONSUMER_GROUP";
 
@@ -121,5 +121,33 @@ public class Config {
 
     public int getBatchSize() {
         return batchSize;
+    }
+
+    public void setNameserver(String nameserver) {
+        this.nameserver = nameserver;
+    }
+
+    public void setConsumerGroup(String consumerGroup) {
+        this.consumerGroup = consumerGroup;
+    }
+
+    public void setMessageModel(String messageModel) {
+        this.messageModel = messageModel;
+    }
+
+    public void setTopics(String topics) {
+        this.topics = topics;
+    }
+
+    public void setZookeeperAddress(String zookeeperAddress) {
+        this.zookeeperAddress = zookeeperAddress;
+    }
+
+    public void setPullInterval(long pullInterval) {
+        this.pullInterval = pullInterval;
+    }
+
+    public void setBatchSize(int batchSize) {
+        this.batchSize = batchSize;
     }
 }

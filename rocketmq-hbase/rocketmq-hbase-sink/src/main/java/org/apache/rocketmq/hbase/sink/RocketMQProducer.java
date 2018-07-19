@@ -27,7 +27,7 @@ import org.slf4j.LoggerFactory;
  * This class represents the RocketMQ producer that effectively pushes the messages to the RocketMQ server.
  */
 public class RocketMQProducer {
-    public static final String PRODUCER_GROUP_NAME = "HBASE_PRODUCER_GROUP";
+    private static final String PRODUCER_GROUP_NAME = "HBASE_PRODUCER_GROUP";
 
     private static final Logger logger = LoggerFactory.getLogger(RocketMQProducer.class);
 

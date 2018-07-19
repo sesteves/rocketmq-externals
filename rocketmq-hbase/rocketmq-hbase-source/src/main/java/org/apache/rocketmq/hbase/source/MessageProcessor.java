@@ -27,7 +27,7 @@ import org.slf4j.LoggerFactory;
 /**
  *
  */
-public class MessageProcessor {
+public class MessageProcessor implements Runnable {
 
     private static final Logger logger = LoggerFactory.getLogger(MessageProcessor.class);
 
@@ -36,6 +36,8 @@ public class MessageProcessor {
     private HBaseClient hbaseClient;
 
     private long pullInterval;
+
+    private boolean on = false;
 
     /**
      * Constructor.
@@ -49,42 +51,49 @@ public class MessageProcessor {
     }
 
     /**
-     *
      * @throws MQClientException
      * @throws IOException
      */
     public void start() throws MQClientException, IOException {
         consumer.start();
         hbaseClient.start();
-        doProcess();
-
+        on = true;
+        final Thread thread = new Thread(this);
+        thread.start();
         logger.info("Message processor started.");
     }
 
     /**
      *
      */
-    private void doProcess() {
-
+    @Override
+    public void run() {
         Map<String, List<MessageExt>> messagesPerTopic;
-        while (true) {
+        while (on) {
 
             try {
-                while((messagesPerTopic = consumer.pull()) == null) {
+                while ((messagesPerTopic = consumer.pull()) == null) {
                     Thread.sleep(pullInterval);
                 }
 
-                for(Map.Entry<String, List<MessageExt>> entry : messagesPerTopic.entrySet()) {
+                for (Map.Entry<String, List<MessageExt>> entry : messagesPerTopic.entrySet()) {
                     final String topic = entry.getKey();
                     final List<MessageExt> messages = entry.getValue();
                     hbaseClient.put(topic, messages);
                 }
 
-
-            } catch (Exception e) {
+            }
+            catch (Exception e) {
                 logger.error("Error while processing messages.", e);
             }
         }
+        logger.info("Message processor stopped.");
     }
 
+    /**
+     *
+     */
+    public void stop() {
+        on = false;
+    }
 }

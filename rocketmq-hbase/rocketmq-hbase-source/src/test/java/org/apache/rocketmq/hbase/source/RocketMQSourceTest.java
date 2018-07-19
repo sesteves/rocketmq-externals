@@ -16,27 +16,203 @@
  */
 package org.apache.rocketmq.hbase.source;
 
+import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.util.Date;
+import org.apache.commons.lang.time.DateFormatUtils;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.hbase.HBaseConfiguration;
+import org.apache.hadoop.hbase.HBaseTestingUtility;
+import org.apache.hadoop.hbase.HColumnDescriptor;
+import org.apache.hadoop.hbase.HConstants;
+import org.apache.hadoop.hbase.HTableDescriptor;
+import org.apache.hadoop.hbase.TableName;
+import org.apache.hadoop.hbase.client.HBaseAdmin;
+import org.apache.rocketmq.broker.BrokerController;
+import org.apache.rocketmq.client.exception.MQBrokerException;
+import org.apache.rocketmq.client.exception.MQClientException;
+import org.apache.rocketmq.client.producer.DefaultMQProducer;
+import org.apache.rocketmq.client.producer.SendResult;
+import org.apache.rocketmq.common.BrokerConfig;
+import org.apache.rocketmq.common.MQVersion;
+import org.apache.rocketmq.common.MixAll;
+import org.apache.rocketmq.common.message.Message;
+import org.apache.rocketmq.common.namesrv.NamesrvConfig;
+import org.apache.rocketmq.namesrv.NamesrvController;
+import org.apache.rocketmq.remoting.exception.RemotingException;
+import org.apache.rocketmq.remoting.netty.NettyClientConfig;
+import org.apache.rocketmq.remoting.netty.NettyServerConfig;
+import org.apache.rocketmq.remoting.protocol.RemotingCommand;
+import org.apache.rocketmq.store.config.MessageStoreConfig;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * This class tests the RocketMQ source by writing data from RocketMQ to HBase and reading it back.
  */
 public class RocketMQSourceTest {
 
-    @Before
-    public void setUp() {
+        private static final String NAMESERVER = "localhost:9876";
 
+    private static final String PRODUCER_GROUP_NAME = "HBASE_PRODUCER_GROUP_TEST";
+
+    private static final String ROCKETMQ_TOPIC = "rocketmq-hbase-topic-test";
+
+    private static final TableName TABLE_NAME = TableName.valueOf(ROCKETMQ_TOPIC);
+
+    private final String COLUMN_FAMILY = "message";
+
+    private static final Logger logger = LoggerFactory.getLogger(RocketMQSourceTest.class);
+
+    private static NamesrvController namesrvController;
+
+    private static BrokerController brokerController;
+
+    private HBaseTestingUtility utility;
+
+    @Before
+    public void setUp() throws Exception {
+        final Configuration hbaseConf = HBaseConfiguration.create();
+
+        utility = new HBaseTestingUtility(hbaseConf);
+        utility.startMiniCluster();
+        utility.getHBaseCluster().getRegionServerThreads().size();
+
+        // start rocketmq server
+        startMQ();
     }
 
     @Test
-    public void testRocketMQSource() {
+    public void testRocketMQSource() throws IOException, InterruptedException, RemotingException, MQClientException,
+        MQBrokerException {
+
+        // create HBase table
+        createTestTable();
+
+        // write data to rocketmq
+        final DefaultMQProducer producer = new DefaultMQProducer(PRODUCER_GROUP_NAME);
+        producer.setNamesrvAddr(NAMESERVER);
+
+        final String msgStr = "test-rocketmq-hbase-" + System.currentTimeMillis();
+
+        try {
+            producer.start();
+
+            final Message msg = new Message(ROCKETMQ_TOPIC, null, msgStr.getBytes("UTF-8"));
+            final SendResult sendResult = producer.send(msg);
+            logger.info("publish message : {}, sendResult:{}", msg, sendResult);
+
+        } finally {
+            producer.shutdown();
+        }
+
+
+        final Config config = new Config();
+        config.setNameserver(NAMESERVER);
+        config.setTopics(ROCKETMQ_TOPIC);
+        config.setPullInterval(0);
+
+        final MessageProcessor messageProcessor = new MessageProcessor(config);
+        messageProcessor.start();
+        Thread.sleep(1000);
+
+        messageProcessor.stop();
+
+
 
     }
 
     @After
-    public void tearDown() {
+    public void tearDown() throws Exception {
+        if(utility != null) {
+            utility.shutdownMiniCluster();
+        }
 
+        if (brokerController != null) {
+            brokerController.shutdown();
+        }
+
+        if (namesrvController != null) {
+            namesrvController.shutdown();
+        }
     }
+
+    /**
+     * Creates the HBase table.
+     *
+     * @throws IOException
+     */
+    private void createTestTable() throws IOException {
+        try (HBaseAdmin hBaseAdmin = utility.getHBaseAdmin()) {
+            final HTableDescriptor hTableDescriptor = new HTableDescriptor(TABLE_NAME);
+            final HColumnDescriptor hColumnDescriptor = new HColumnDescriptor(COLUMN_FAMILY);
+            hTableDescriptor.addFamily(hColumnDescriptor);
+            hBaseAdmin.createTable(hTableDescriptor);
+        }
+        utility.waitUntilAllRegionsAssigned(TABLE_NAME);
+    }
+
+
+    /**
+     * This method starts the RocketMQ server.
+     *
+     * @throws Exception
+     */
+    private static void startMQ() throws Exception {
+        startNamesrv();
+        startBroker();
+
+        Thread.sleep(2000);
+    }
+
+
+    /**
+     * This method starts the RocketMQ nameserver.
+     *
+     * @throws Exception
+     */
+    private static void startNamesrv() throws Exception {
+
+        NamesrvConfig namesrvConfig = new NamesrvConfig();
+        NettyServerConfig nettyServerConfig = new NettyServerConfig();
+        nettyServerConfig.setListenPort(9876);
+
+        namesrvController = new NamesrvController(namesrvConfig, nettyServerConfig);
+        boolean initResult = namesrvController.initialize();
+        if (!initResult) {
+            namesrvController.shutdown();
+            throw new Exception("Name server controller failed to initialize.");
+        }
+        namesrvController.start();
+    }
+
+    /**
+     * This method starts the RocketMQ broker.
+     *
+     * @throws Exception
+     */
+    private static void startBroker() throws Exception {
+        System.setProperty(RemotingCommand.REMOTING_VERSION_KEY, Integer.toString(MQVersion.CURRENT_VERSION));
+
+        BrokerConfig brokerConfig = new BrokerConfig();
+        brokerConfig.setNamesrvAddr(NAMESERVER);
+        brokerConfig.setBrokerId(MixAll.MASTER_ID);
+        NettyServerConfig nettyServerConfig = new NettyServerConfig();
+        nettyServerConfig.setListenPort(10911);
+            NettyClientConfig nettyClientConfig = new NettyClientConfig();
+        MessageStoreConfig messageStoreConfig = new MessageStoreConfig();
+
+        brokerController = new BrokerController(brokerConfig, nettyServerConfig, nettyClientConfig, messageStoreConfig);
+        boolean initResult = brokerController.initialize();
+        if (!initResult) {
+            brokerController.shutdown();
+            throw new Exception();
+        }
+        brokerController.start();
+    }
+
+
 }
