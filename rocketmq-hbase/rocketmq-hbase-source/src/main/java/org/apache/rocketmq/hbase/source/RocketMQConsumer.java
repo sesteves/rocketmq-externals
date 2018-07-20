@@ -65,6 +65,7 @@ public class RocketMQConsumer {
         consumer.setMessageModel(messageModel);
         consumer.setRegisterTopics(topics);
         consumer.start();
+        logger.info("RocketMQ consumer started.");
     }
 
     public Map<String, List<MessageExt>> pull() throws MQClientException, RemotingException, InterruptedException,

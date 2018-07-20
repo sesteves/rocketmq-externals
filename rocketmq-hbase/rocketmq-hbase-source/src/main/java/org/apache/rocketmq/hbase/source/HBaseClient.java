@@ -43,16 +43,21 @@ public class HBaseClient {
 
     private String zookeeperAddress;
 
+    private int zookeeperPort;
+
     private Connection connection;
 
     public HBaseClient(Config config) {
         this.zookeeperAddress = config.getZookeeperAddress();
+        this.zookeeperPort = config.getZookeeperPort();
     }
 
     public void start() throws IOException {
         final Configuration hbaseConfig = HBaseConfiguration.create();
         hbaseConfig.set("hbase.zookeeper.quorum", zookeeperAddress);
+        hbaseConfig.set("hbase.zookeeper.property.clientPort", Integer.toString(zookeeperPort));
         connection = ConnectionFactory.createConnection(hbaseConfig);
+        logger.info("HBase client started.");
     }
 
     /**

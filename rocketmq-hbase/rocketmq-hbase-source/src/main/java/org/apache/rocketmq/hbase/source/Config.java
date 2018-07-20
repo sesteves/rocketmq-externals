@@ -39,6 +39,8 @@ public class Config {
 
     private String zookeeperAddress = "localhost";
 
+    private int zookeeperPort = 2181;
+
     private long pullInterval = 1000;
 
     private int batchSize = 32;
@@ -115,6 +117,10 @@ public class Config {
         return zookeeperAddress;
     }
 
+    public int getZookeeperPort() {
+        return zookeeperPort;
+    }
+
     public long getPullInterval() {
         return pullInterval;
     }
@@ -141,6 +147,10 @@ public class Config {
 
     public void setZookeeperAddress(String zookeeperAddress) {
         this.zookeeperAddress = zookeeperAddress;
+    }
+
+    public void setZookeeperPort(int zookeeperPort) {
+        this.zookeeperPort = zookeeperPort;
     }
 
     public void setPullInterval(long pullInterval) {

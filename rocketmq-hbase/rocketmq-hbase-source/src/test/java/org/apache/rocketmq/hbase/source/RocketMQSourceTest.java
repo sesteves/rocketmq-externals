@@ -85,10 +85,14 @@ public class RocketMQSourceTest {
 
     @Before
     public void setUp() throws Exception {
-        hbaseConf = HBaseConfiguration.create();
-        utility = new HBaseTestingUtility(hbaseConf);
+        // start hbase server
+        final Configuration config = HBaseConfiguration.create();
+        utility = new HBaseTestingUtility(config);
         utility.startMiniCluster();
-        utility.getHBaseCluster().getRegionServerThreads().size();
+        hbaseConf = utility.getConfiguration();
+
+        // create HBase table
+        createTable();
 
         // start rocketmq server
         startMQ();
@@ -96,16 +100,6 @@ public class RocketMQSourceTest {
 
     @Test
     public void testRocketMQSource() throws Exception {
-
-        // create HBase table
-        try {
-            createTable();
-            logger.info("HBase table created.");
-        } catch (Exception e) {
-            logger.error("Error while creating table.", e);
-            throw new Exception("Error while creating table.", e);
-        }
-
         // write data to rocketmq
         final String inMsg = "test-rocketmq-hbase-" + System.currentTimeMillis();
         final String msgId;
@@ -121,6 +115,7 @@ public class RocketMQSourceTest {
         final Config config = new Config();
         config.setNameserver(NAMESERVER);
         config.setTopics(ROCKETMQ_TOPIC);
+        config.setZookeeperPort(utility.getZkCluster().getClientPort());
         config.setPullInterval(0);
 
         final MessageProcessor messageProcessor = new MessageProcessor(config);
