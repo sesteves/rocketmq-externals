@@ -95,15 +95,25 @@ public class RocketMQSourceTest {
     }
 
     @Test
-    public void testRocketMQSource() throws IOException, InterruptedException, RemotingException, MQClientException,
-        MQBrokerException {
+    public void testRocketMQSource() throws Exception {
 
         // create HBase table
-        createTable();
+        try {
+            createTable();
+        } catch (Exception e) {
+            logger.error("Error while creating table.", e);
+            throw new Exception("Error while creating table.", e);
+        }
 
         // write data to rocketmq
         final String inMsg = "test-rocketmq-hbase-" + System.currentTimeMillis();
-        final String msgId = writeData(inMsg);
+        final String msgId;
+        try {
+            msgId = writeData(inMsg);
+        } catch (Exception e) {
+            logger.error("Error while writing data.", e);
+            throw new Exception("Error while writing data.", e);
+        }
 
         // write data from rocketmq to hbase
         final Config config = new Config();
@@ -112,12 +122,23 @@ public class RocketMQSourceTest {
         config.setPullInterval(0);
 
         final MessageProcessor messageProcessor = new MessageProcessor(config);
-        messageProcessor.start();
+        try {
+            messageProcessor.start();
+        } catch(Exception e) {
+            logger.error("Error while starting message processor.", e);
+            throw new Exception("Error while starting message processor.", e);
+        }
         Thread.sleep(1000);
         messageProcessor.stop();
 
         // read data from hbase
-        final String readMsg  = readTestData(msgId);
+        final String readMsg;
+        try {
+            readMsg = readData(msgId);
+        } catch (Exception e) {
+            logger.error("Error while reading data." , e);
+            throw new Exception("Error while reading data.", e);
+        }
 
         assertEquals(inMsg, readMsg);
     }
@@ -153,7 +174,6 @@ public class RocketMQSourceTest {
     }
 
     /**
-     *
      * @param inMsg
      * @return
      * @throws MQClientException
@@ -181,12 +201,11 @@ public class RocketMQSourceTest {
     }
 
     /**
-     *
      * @param row
      * @return
      * @throws IOException
      */
-    private String readTestData(String row) throws IOException {
+    private String readData(String row) throws IOException {
         try (Table hTable = ConnectionFactory.createConnection(hbaseConf).getTable(TABLE_NAME)) {
             final Get get = new Get(toBytes(row));
             final byte[] family = toBytes(COLUMN_FAMILY);
