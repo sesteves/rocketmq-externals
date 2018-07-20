@@ -24,10 +24,8 @@ import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.client.Connection;
 import org.apache.hadoop.hbase.client.ConnectionFactory;
-import org.apache.hadoop.hbase.client.HTable;
 import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.client.Table;
-import org.apache.rocketmq.common.message.Message;
 import org.apache.rocketmq.common.message.MessageExt;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -58,17 +56,16 @@ public class HBaseClient {
     }
 
     /**
-     *
      * @param tableName
      * @param messages
      * @throws IOException
      */
     public void put(String tableName, List<MessageExt> messages) throws IOException {
 
-        try(Table table = connection.getTable(TableName.valueOf(tableName))) {
+        try (Table table = connection.getTable(TableName.valueOf(tableName))) {
             final List<Put> puts = new ArrayList<>();
 
-            for(MessageExt msg : messages) {
+            for (MessageExt msg : messages) {
                 final Put put = new Put(toBytes(msg.getMsgId()));
                 put.addColumn(COLUMN_FAMILY, null, msg.getBody());
                 puts.add(put);
@@ -79,7 +76,6 @@ public class HBaseClient {
     }
 
     /**
-     *
      * @throws IOException
      */
     public void stop() throws IOException {

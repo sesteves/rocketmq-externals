@@ -138,19 +138,18 @@ public class ReplicatorTest {
     }
 
     /**
-     *
      * @param configuration
      * @param peerName
      * @param tableCFs
      * @throws ReplicationException
      * @throws IOException
      */
-    private void addPeer(final Configuration configuration,String peerName, Map<TableName, List<String>> tableCFs)
-            throws ReplicationException, IOException {
+    private void addPeer(final Configuration configuration, String peerName, Map<TableName, List<String>> tableCFs)
+        throws ReplicationException, IOException {
         try (ReplicationAdmin replicationAdmin = new ReplicationAdmin(configuration)) {
             ReplicationPeerConfig peerConfig = new ReplicationPeerConfig()
-                    .setClusterKey(ZKConfig.getZooKeeperClusterKey(configuration))
-                    .setReplicationEndpointImpl(Replicator.class.getName());
+                .setClusterKey(ZKConfig.getZooKeeperClusterKey(configuration))
+                .setReplicationEndpointImpl(Replicator.class.getName());
 
             replicationAdmin.addPeer(peerName, peerConfig, tableCFs);
         }
@@ -225,7 +224,7 @@ public class ReplicatorTest {
      */
     @Test
     public void testCustomReplicationEndpoint() throws IOException, ReplicationException, InterruptedException,
-            MQClientException, RemotingException, MQBrokerException {
+        MQClientException, RemotingException, MQBrokerException {
 
         final DefaultMQPullConsumer consumer = new DefaultMQPullConsumer(CONSUMER_GROUP_NAME);
         try {
@@ -322,8 +321,8 @@ public class ReplicatorTest {
      */
     private Transaction insertData(int numberOfRecords) throws IOException {
         final Transaction transaction = new Transaction(numberOfRecords);
-        try(Table hTable = ConnectionFactory.createConnection(utility.getConfiguration()).getTable(TABLE_NAME)) {
-            for(int i = 0; i < numberOfRecords; i++) {
+        try (Table hTable = ConnectionFactory.createConnection(utility.getConfiguration()).getTable(TABLE_NAME)) {
+            for (int i = 0; i < numberOfRecords; i++) {
                 final byte[] rowKey = toBytes(String.format(ROWKEY, i));
                 final byte[] family = toBytes(COLUMN_FAMILY);
                 final Put put = new Put(rowKey);
@@ -344,7 +343,7 @@ public class ReplicatorTest {
      * @throws ReplicationException
      */
     private void removePeer() throws IOException, ReplicationException {
-        try(ReplicationAdmin replicationAdmin = new ReplicationAdmin(utility.getConfiguration())) {
+        try (ReplicationAdmin replicationAdmin = new ReplicationAdmin(utility.getConfiguration())) {
             replicationAdmin.removePeer(PEER_NAME);
         }
     }
@@ -356,7 +355,7 @@ public class ReplicatorTest {
      */
     @After
     public void tearDown() throws Exception {
-        if(utility != null) {
+        if (utility != null) {
             utility.shutdownMiniCluster();
         }
 

@@ -100,6 +100,7 @@ public class RocketMQSourceTest {
         // create HBase table
         try {
             createTable();
+            logger.info("HBase table created.");
         } catch (Exception e) {
             logger.error("Error while creating table.", e);
             throw new Exception("Error while creating table.", e);
@@ -110,6 +111,7 @@ public class RocketMQSourceTest {
         final String msgId;
         try {
             msgId = writeData(inMsg);
+            logger.info("Message written to rocketmq (msgID: " + msgId + ").");
         } catch (Exception e) {
             logger.error("Error while writing data.", e);
             throw new Exception("Error while writing data.", e);
@@ -124,19 +126,21 @@ public class RocketMQSourceTest {
         final MessageProcessor messageProcessor = new MessageProcessor(config);
         try {
             messageProcessor.start();
-        } catch(Exception e) {
+        } catch (Exception e) {
             logger.error("Error while starting message processor.", e);
             throw new Exception("Error while starting message processor.", e);
         }
         Thread.sleep(1000);
         messageProcessor.stop();
+        logger.info("Message processor completed successfully.");
 
         // read data from hbase
         final String readMsg;
         try {
             readMsg = readData(msgId);
+            logger.info("Message read from HBase (msg: " + readMsg + ").");
         } catch (Exception e) {
-            logger.error("Error while reading data." , e);
+            logger.error("Error while reading data.", e);
             throw new Exception("Error while reading data.", e);
         }
 

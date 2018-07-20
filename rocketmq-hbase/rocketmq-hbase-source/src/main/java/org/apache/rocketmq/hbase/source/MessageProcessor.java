@@ -82,8 +82,7 @@ public class MessageProcessor implements Runnable {
                     hbaseClient.put(topic, messages);
                 }
 
-            }
-            catch (Exception e) {
+            } catch (Exception e) {
                 logger.error("Error while processing messages.", e);
             }
         }
