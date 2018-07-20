@@ -206,7 +206,7 @@ public class RocketMQSourceTest {
         try (Table hTable = ConnectionFactory.createConnection(hbaseConf).getTable(TABLE_NAME)) {
             final Get get = new Get(toBytes(row));
             get.addFamily(HBaseClient.COLUMN_FAMILY);
-            Result result = hTable.get(get);
+            final Result result = hTable.get(get);
             final String resultStr = Bytes.toString(result.getValue(HBaseClient.COLUMN_FAMILY, null));
             return resultStr;
         }
