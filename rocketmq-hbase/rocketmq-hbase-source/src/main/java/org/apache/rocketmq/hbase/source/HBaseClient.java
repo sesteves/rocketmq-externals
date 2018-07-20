@@ -37,7 +37,7 @@ import static org.apache.hadoop.hbase.util.Bytes.toBytes;
  */
 public class HBaseClient {
 
-    private static final byte[] COLUMN_FAMILY = toBytes("MESSAGE");
+    public static final byte[] COLUMN_FAMILY = toBytes("message");
 
     private static final Logger logger = LoggerFactory.getLogger(HBaseClient.class);
 

@@ -71,8 +71,6 @@ public class RocketMQSourceTest {
 
     private static final TableName TABLE_NAME = TableName.valueOf(ROCKETMQ_TOPIC);
 
-    private final String COLUMN_FAMILY = "message";
-
     private static final Logger logger = LoggerFactory.getLogger(RocketMQSourceTest.class);
 
     private static NamesrvController namesrvController;
@@ -165,7 +163,7 @@ public class RocketMQSourceTest {
     private void createTable() throws IOException {
         try (HBaseAdmin hBaseAdmin = utility.getHBaseAdmin()) {
             final HTableDescriptor hTableDescriptor = new HTableDescriptor(TABLE_NAME);
-            final HColumnDescriptor hColumnDescriptor = new HColumnDescriptor(COLUMN_FAMILY);
+            final HColumnDescriptor hColumnDescriptor = new HColumnDescriptor(HBaseClient.COLUMN_FAMILY);
             hTableDescriptor.addFamily(hColumnDescriptor);
             hBaseAdmin.createTable(hTableDescriptor);
         }
@@ -207,10 +205,9 @@ public class RocketMQSourceTest {
     private String readData(String row) throws IOException {
         try (Table hTable = ConnectionFactory.createConnection(hbaseConf).getTable(TABLE_NAME)) {
             final Get get = new Get(toBytes(row));
-            final byte[] family = toBytes(COLUMN_FAMILY);
-            get.addFamily(family);
+            get.addFamily(HBaseClient.COLUMN_FAMILY);
             Result result = hTable.get(get);
-            final String resultStr = Bytes.toString(result.getValue(family, null));
+            final String resultStr = Bytes.toString(result.getValue(HBaseClient.COLUMN_FAMILY, null));
             return resultStr;
         }
     }
