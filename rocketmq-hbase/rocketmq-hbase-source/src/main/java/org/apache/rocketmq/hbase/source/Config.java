@@ -84,30 +84,23 @@ public class Config {
                             Object arg;
                             if (cn.equals("int") || cn.equals("Integer")) {
                                 arg = Integer.parseInt(property);
-                            }
-                            else if (cn.equals("long") || cn.equals("Long")) {
+                            } else if (cn.equals("long") || cn.equals("Long")) {
                                 arg = Long.parseLong(property);
-                            }
-                            else if (cn.equals("double") || cn.equals("Double")) {
+                            } else if (cn.equals("double") || cn.equals("Double")) {
                                 arg = Double.parseDouble(property);
-                            }
-                            else if (cn.equals("boolean") || cn.equals("Boolean")) {
+                            } else if (cn.equals("boolean") || cn.equals("Boolean")) {
                                 arg = Boolean.parseBoolean(property);
-                            }
-                            else if (cn.equals("float") || cn.equals("Float")) {
+                            } else if (cn.equals("float") || cn.equals("Float")) {
                                 arg = Float.parseFloat(property);
-                            }
-                            else if (cn.equals("String")) {
+                            } else if (cn.equals("String")) {
                                 arg = property;
-                            }
-                            else {
+                            } else {
                                 continue;
                             }
                             method.invoke(object, arg);
                         }
                     }
-                }
-                catch (Throwable ignored) {
+                } catch (Throwable ignored) {
                 }
             }
         }

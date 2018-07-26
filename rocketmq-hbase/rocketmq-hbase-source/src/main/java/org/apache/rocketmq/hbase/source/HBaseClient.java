@@ -33,8 +33,7 @@ import org.slf4j.LoggerFactory;
 import static org.apache.hadoop.hbase.util.Bytes.toBytes;
 
 /**
- * This class represents the HBase client that effectively writes the messages to the corresponding
- * HBase tables.
+ * This class represents the HBase client that effectively writes the messages to the corresponding HBase tables.
  */
 public class HBaseClient {
 

@@ -20,9 +20,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * This class is the entry point for the RocketMQ source, which replicates RocketMQ topics to HBase tables.
- * It assumes that (i) each configured RocketMQ topic is maped to a HBase table with the same name;
- * and (ii) the corresponding HBase tables already exist.
+ * This class is the entry point for the RocketMQ source, which replicates RocketMQ topics to HBase tables. It assumes
+ * that (i) each configured RocketMQ topic is maped to a HBase table with the same name; and (ii) the corresponding
+ * HBase tables already exist.
  */
 public class RocketMQSource {
 
@@ -46,8 +46,7 @@ public class RocketMQSource {
             final MessageProcessor processor = new MessageProcessor(config);
             processor.start();
 
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             logger.error("Error on starting RocketMQSource.", e);
         }
     }
