@@ -33,7 +33,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- *
+ * This class represents the RocketMQ consumer that effectively pulls the messages from the RocketMQ topics.
  */
 public class RocketMQConsumer {
 
@@ -51,6 +51,11 @@ public class RocketMQConsumer {
 
     private int batchSize;
 
+    /**
+     * Constructor.
+     *
+     * @param config the configuration
+     */
     public RocketMQConsumer(Config config) {
         this.namesrvAddr = config.getNameserver();
         this.consumerGroup = config.getConsumerGroup();
@@ -59,6 +64,11 @@ public class RocketMQConsumer {
         this.batchSize = config.getBatchSize();
     }
 
+    /**
+     * Starts the rocketmq consumer.
+     *
+     * @throws MQClientException
+     */
     public void start() throws MQClientException {
         consumer = new DefaultMQPullConsumer(consumerGroup);
         consumer.setNamesrvAddr(namesrvAddr);
@@ -81,7 +91,7 @@ public class RocketMQConsumer {
                 if (pullResult.getPullStatus() == PullStatus.FOUND) {
                     messagesPerTopic.put(topic, pullResult.getMsgFoundList());
 
-                    // logger.debug("Pulled message, body={}", new String(msg.getBody(), "UTF-8"));
+                    logger.debug("Pulled {} messages", pullResult.getMsgFoundList().size());
                 }
             }
         }
@@ -97,7 +107,11 @@ public class RocketMQConsumer {
         return offset;
     }
 
+    /**
+     * Stops the rocketmq consumer.
+     */
     public void stop() {
         consumer.shutdown();
+        logger.info("RocketMQ consumer stopped.");
     }
 }

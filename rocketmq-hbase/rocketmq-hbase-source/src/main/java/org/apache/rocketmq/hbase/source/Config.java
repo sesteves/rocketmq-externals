@@ -21,10 +21,12 @@ import java.io.InputStream;
 import java.lang.reflect.Method;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Properties;
 import java.util.Set;
 
+/**
+ * Config is a convenience class that maintains all configuration properties that are needed for the application.
+ */
 public class Config {
 
     private static final String TOPICS_SEPARATOR = ",";
@@ -45,7 +47,11 @@ public class Config {
 
     private int batchSize = 32;
 
-
+    /**
+     * Loads all properties from the configuration file.
+     *
+     * @throws IOException
+     */
     public void load() throws IOException {
         InputStream in = Config.class.getClassLoader().getResourceAsStream("rocketmq_hbase.conf");
         Properties properties = new Properties();
@@ -54,6 +60,12 @@ public class Config {
         properties2Object(properties, this);
     }
 
+    /**
+     * Populate class fields with properties.
+     *
+     * @param p the properties instance
+     * @param object this class instance
+     */
     private void properties2Object(final Properties p, final Object object) {
         Method[] methods = object.getClass().getMethods();
         for (Method method : methods) {
@@ -72,23 +84,30 @@ public class Config {
                             Object arg;
                             if (cn.equals("int") || cn.equals("Integer")) {
                                 arg = Integer.parseInt(property);
-                            } else if (cn.equals("long") || cn.equals("Long")) {
+                            }
+                            else if (cn.equals("long") || cn.equals("Long")) {
                                 arg = Long.parseLong(property);
-                            } else if (cn.equals("double") || cn.equals("Double")) {
+                            }
+                            else if (cn.equals("double") || cn.equals("Double")) {
                                 arg = Double.parseDouble(property);
-                            } else if (cn.equals("boolean") || cn.equals("Boolean")) {
+                            }
+                            else if (cn.equals("boolean") || cn.equals("Boolean")) {
                                 arg = Boolean.parseBoolean(property);
-                            } else if (cn.equals("float") || cn.equals("Float")) {
+                            }
+                            else if (cn.equals("float") || cn.equals("Float")) {
                                 arg = Float.parseFloat(property);
-                            } else if (cn.equals("String")) {
+                            }
+                            else if (cn.equals("String")) {
                                 arg = property;
-                            } else {
+                            }
+                            else {
                                 continue;
                             }
                             method.invoke(object, arg);
                         }
                     }
-                } catch (Throwable ignored) {
+                }
+                catch (Throwable ignored) {
                 }
             }
         }

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-PROGRAM_NAME="org.apache.rocketmq.hbase.RocketMQSource"
+PROGRAM_NAME="org.apache.rocketmq.hbase.source.RocketMQSource"
 PIDS=`ps -ef | grep $PROGRAM_NAME | grep -v "grep" | awk '{print $2}'`
 
 if [ -z $PIDS ]; then

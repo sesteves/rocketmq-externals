@@ -25,7 +25,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- *
+ * MessageProcessor is the main class that is responsible for managing the main work flow of pulling
+ * messages from RocketMQ topics and writing them into HBase.
  */
 public class MessageProcessor implements Runnable {
 
@@ -51,6 +52,8 @@ public class MessageProcessor implements Runnable {
     }
 
     /**
+     * Starts the message processor by starting out the rocketmq consumer and the hbase client.
+     *
      * @throws MQClientException
      * @throws IOException
      */
@@ -64,7 +67,8 @@ public class MessageProcessor implements Runnable {
     }
 
     /**
-     *
+     * This is the main method that runs in a separate thread and does the actual processing of
+     * pulling message from rocketmq and writing them into hbase.
      */
     @Override
     public void run() {
@@ -82,15 +86,23 @@ public class MessageProcessor implements Runnable {
                     hbaseClient.put(topic, messages);
                 }
 
-            } catch (Exception e) {
+            }
+            catch (Exception e) {
                 logger.error("Error while processing messages.", e);
             }
+        }
+        consumer.stop();
+        try {
+            hbaseClient.stop();
+        }
+        catch (IOException e) {
+            logger.error("HBase client failed to stop.", e);
         }
         logger.info("Message processor stopped.");
     }
 
     /**
-     *
+     * Stops the message processor.
      */
     public void stop() {
         on = false;

@@ -33,7 +33,8 @@ import org.slf4j.LoggerFactory;
 import static org.apache.hadoop.hbase.util.Bytes.toBytes;
 
 /**
- *
+ * This class represents the HBase client that effectively writes the messages to the corresponding
+ * HBase tables.
  */
 public class HBaseClient {
 
@@ -47,11 +48,21 @@ public class HBaseClient {
 
     private Connection connection;
 
+    /**
+     * Constructor.
+     *
+     * @param config the configuration
+     */
     public HBaseClient(Config config) {
         this.zookeeperAddress = config.getZookeeperAddress();
         this.zookeeperPort = config.getZookeeperPort();
     }
 
+    /**
+     * Starts the HBase client by opening a connection to the HBase server.
+     *
+     * @throws IOException
+     */
     public void start() throws IOException {
         final Configuration hbaseConfig = HBaseConfiguration.create();
         hbaseConfig.set("hbase.zookeeper.quorum", zookeeperAddress);
@@ -61,6 +72,8 @@ public class HBaseClient {
     }
 
     /**
+     * Writes messages into a specified HBase table.
+     *
      * @param tableName
      * @param messages
      * @throws IOException
@@ -81,9 +94,12 @@ public class HBaseClient {
     }
 
     /**
+     * Stops the HBase client.
+     *
      * @throws IOException
      */
     public void stop() throws IOException {
         connection.close();
+        logger.info("HBase client stopped.");
     }
 }

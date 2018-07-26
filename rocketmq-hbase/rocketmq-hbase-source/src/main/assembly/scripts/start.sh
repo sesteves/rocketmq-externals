@@ -17,7 +17,6 @@ function exportClassPath(){
     CLASSPATH=$CLASSPATH:./conf
     export CLASSPATH
 }
-ulimit -n 65535
 exportClassPath
 
-java -server -Xms512m -Xmx512m -Xss2m -XX:NewRatio=2  -XX:+UseGCOverheadLimit -XX:-UseParallelGC -XX:ParallelGCThreads=24 org.apache.rocketmq.hbase.RocketMQSource
+java -server -Xms512m -Xmx512m -Xss2m -XX:NewRatio=2  -XX:+UseGCOverheadLimit -XX:-UseParallelGC -XX:ParallelGCThreads=24 org.apache.rocketmq.hbase.source.RocketMQSource

@@ -18,13 +18,10 @@ package org.apache.rocketmq.hbase.source;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
-import java.util.Date;
-import org.apache.commons.lang.time.DateFormatUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.HBaseTestingUtility;
 import org.apache.hadoop.hbase.HColumnDescriptor;
-import org.apache.hadoop.hbase.HConstants;
 import org.apache.hadoop.hbase.HTableDescriptor;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.client.ConnectionFactory;
@@ -104,7 +101,8 @@ public class RocketMQSourceTest {
         try {
             msgId = writeData(inMsg);
             logger.info("Message written to rocketmq (msgID: " + msgId + ").");
-        } catch (Exception e) {
+        }
+        catch (Exception e) {
             logger.error("Error while writing data.", e);
             throw new Exception("Error while writing data.", e);
         }
@@ -119,7 +117,8 @@ public class RocketMQSourceTest {
         final MessageProcessor messageProcessor = new MessageProcessor(config);
         try {
             messageProcessor.start();
-        } catch (Exception e) {
+        }
+        catch (Exception e) {
             logger.error("Error while starting message processor.", e);
             throw new Exception("Error while starting message processor.", e);
         }
@@ -132,7 +131,8 @@ public class RocketMQSourceTest {
         try {
             readMsg = readData(msgId);
             logger.info("Message read from HBase (msg: " + readMsg + ").");
-        } catch (Exception e) {
+        }
+        catch (Exception e) {
             logger.error("Error while reading data.", e);
             throw new Exception("Error while reading data.", e);
         }
@@ -192,7 +192,8 @@ public class RocketMQSourceTest {
             final SendResult sendResult = producer.send(msg);
             logger.info("publish message : {}, sendResult:{}", msg, sendResult);
             return sendResult.getMsgId();
-        } finally {
+        }
+        finally {
             producer.shutdown();
         }
     }
