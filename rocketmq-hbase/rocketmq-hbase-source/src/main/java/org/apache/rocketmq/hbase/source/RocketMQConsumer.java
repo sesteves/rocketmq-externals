@@ -78,6 +78,15 @@ public class RocketMQConsumer {
         logger.info("RocketMQ consumer started.");
     }
 
+    /**
+     * Pulls messages from specified topics.
+     *
+     * @return a map containing a list of messages per topic
+     * @throws MQClientException
+     * @throws RemotingException
+     * @throws InterruptedException
+     * @throws MQBrokerException
+     */
     public Map<String, List<MessageExt>> pull() throws MQClientException, RemotingException, InterruptedException,
         MQBrokerException {
 
